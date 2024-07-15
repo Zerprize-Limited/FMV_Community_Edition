@@ -5,6 +5,7 @@
 @inject StateContainer stateContainer
 @inject IConfiguration render
 @inject IStringLocalizer<Localization.SharedResource> Loc
+@inject HttpClient Http
 
 <PageTitle>@ReturnTitle()</PageTitle>
 
@@ -20,18 +21,22 @@
 {
     <FMIPopup OnClose="ModalClose"></FMIPopup>
 }
+@if (stateContainer.showPDFreport)
+{
+    <PDFout OnClose="ModalClose"></PDFout>
+}
 <MenuBar refreshParent="refreshParent" onInputFileChange="OnInputFileChange" fileIsLoaded="FileIsLoaded" />
 <SideBar refreshParent="refreshParent" newFunction="NewFunction" nextFn="NextFn" />
 <div id="mainWindow" class="main" @onkeydown=NextFn tabindex="0">
     @if (stateContainer.spreadsheetVisible > 0)
     {
-        <div class="main-visualiser @(stateContainer.spreadsheetVisible==1?"main-half":"")">
+        <div class="main-visualiser @(stateContainer.spreadsheetVisible==1?"main-half-s":"")">
             <Spreadsheet @ref="spreadsheet" refreshParent="refreshParent"></Spreadsheet>
         </div>
     }
     @if (stateContainer.spreadsheetVisible != 2)
     {
-        <div class="main-visualiser @(stateContainer.spreadsheetVisible==1?"main-half":"")" touch-action=@stateContainer.touchAction>
+        <div class="main-visualiser @(stateContainer.spreadsheetVisible==1?"main-half-m":"")" touch-action=@stateContainer.touchAction>
             @if (stateContainer.inputDropStatus == "file-input-zone-drop")
             {
                 <div class="file-input-zone-drop"><InputFile OnChange="OnInputFileChange" single accept=".xfmv" title=@Loc["OPEN_TOOLTIP"] /></div>
@@ -79,25 +84,43 @@
                 </defs>
                 @if (stateContainer.fileLoaded)
                 {
-                    <g @onclick="UnSelect">
-                        <rect fill=@render[$"{stateContainer.newFnStyle}:canvas-color"] opacity=@render[$"{stateContainer.newFnStyle}:canvas-opacity"] width="100%" height="100%" />
-                    </g>
-                    foreach (Coupling coupling in stateContainer.couplingList.FindAll(x => x.outputFn != stateContainer.selectedFn && x.toFn != stateContainer.selectedFn && x.Name != stateContainer.selectedLabel))
-                    {
-                        <CouplingDisplay coupling=@coupling refreshParent="refreshParent" />
-                    }
-                    foreach (Function function in stateContainer.functionList.FindAll(x => x.IDNr != stateContainer.selectedFn))
-                    {
-                        <FunctionDisplay function=@function refreshParent="refreshParent" />
-                    }
+                    <AuthorizeView>
+                        <Authorized>
+                            <g @onclick="UnSelect" @onmousedown="selectStart">
+                                <rect fill=@render[$"{stateContainer.newFnStyle}:canvas-color"] opacity=@render[$"{stateContainer.newFnStyle}:canvas-opacity"] width="100%" height="100%" />
+                            </g>
+                        </Authorized>
+                        <NotAuthorized>
+                            <g @onclick="UnSelect">
+                                <rect fill=@render[$"{stateContainer.newFnStyle}:canvas-color"] opacity=@render[$"{stateContainer.newFnStyle}:canvas-opacity"] width="100%" height="100%" />
+                            </g>
+                        </NotAuthorized>
+                    </AuthorizeView>
+                    <CouplingDisplay refreshParent="refreshParent" />
+                    <FunctionDisplay refreshParent="refreshParent" />
                     if (stateContainer.selectedCoupling is not null)
                     {
-                        <CouplingDisplay coupling=@stateContainer.selectedCoupling refreshParent="refreshParent" />
+                        <CouplingSelected refreshParent="refreshParent" />
                     }
-                    if (stateContainer.selectedFunction is not null)
+                    if (stateContainer.selectedMulti.Count > 0)
                     {
-                        <FunctionDisplay function=@stateContainer.selectedFunction refreshParent="refreshParent" />
+                        <FunctionSelected refreshParent="refreshParent" />
                     }
+                    if (stateContainer.isSelecting)
+                    {
+                        <SelectMulti refreshParent="refreshParent" />
+                    }
+                }
+                @if (stateContainer.cycleFMI > -1)
+                {
+                    var Ttext = $"Cycle = {stateContainer.cycleFMI}"; //Here is the Cycle count text in the upper left corner
+                    var Twidth = Ttext.Length * 4 + 4;
+                    <g transform="scale(@(stateContainer.tempZoomA.ToString("0.##", CultureInfo.InvariantCulture)))">
+                        <rect x="3" y="3" width=@Twidth.ToString("0.##", CultureInfo.InvariantCulture) height="12" style="fill: #FFFFFF; stroke: none; opacity: 0.6" rx="5" ry="5" />
+                        <text x="8" y="11" font-size="5pt" font-family="'PT Sans Caption', sans-serif">
+                            @Ttext
+                        </text>
+                    </g>
                 }
             </svg>
             <p>
@@ -140,6 +163,7 @@
         stateContainer.showModal = state;
         stateContainer.showColorPicker = state;
         stateContainer.showFMIPopup = state;
+        stateContainer.showPDFreport = state;
     }
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -296,6 +320,8 @@
         XmlNode IDName = stateContainer.projectData_Undo[0].CreateElement("IDName");
         IDName.InnerText = "";
         itemF.AppendChild(IDName);
+        XmlNode Description = stateContainer.projectData_Undo[0].CreateElement("Description");
+        itemF.AppendChild(Description);
         XmlAttribute profileFn = stateContainer.projectData_Undo[0].CreateAttribute("profileFn");
         profileFn.Value = "";
         itemF.Attributes.Append(profileFn);
@@ -349,12 +375,13 @@
     private void FileIsLoaded()
     {
         stateContainer.selectedFn = "-1";
-        stateContainer.fnName = "";
-        stateContainer.isDisabled = true;
         stateContainer.aspectsList = new List<Aspect>();
         stateContainer.outputsList = new List<Aspect>();
         stateContainer.couplingList = new List<Coupling>();
         stateContainer.functionList = new List<Function>();
+        stateContainer.metadataDS = new DataSet();
+        stateContainer.metaDataKeys = new Dictionary<string, string>();
+        stateContainer.cycleFMI = -1;
         maxFn = -1;
         var getFns = stateContainer.projectData_Undo[0].SelectNodes("//FM/Functions/Function");
         if (getFns != null)
@@ -413,6 +440,10 @@
                 if (fn.SelectSingleNode("@profileT") == null)
                 {
                     fn.Attributes!.Append(stateContainer.projectData_Undo[0].CreateAttribute("profileT"));
+                }
+                if (fn.SelectSingleNode("Description") == null)
+                {
+                    fn.AppendChild(stateContainer.projectData_Undo[0].CreateElement("Description"));
                 }
                 //as the Functions are read from the loaded file, add them to the functionList
                 maxFn = Math.Max(maxFn, int.Parse(fn.SelectSingleNode("IDNr")?.InnerText ?? "0"));
@@ -622,6 +653,7 @@
     }
     private void UnSelect(MouseEventArgs e)
     {
+        stateContainer.isSelecting = false;
         if (stateContainer.selectedFn != "-1" && stateContainer.selectedFunction?.IDName == "")
         {
             stateContainer.defaultFnLabel();
@@ -635,15 +667,9 @@
             stateContainer.selectedCoupling.aspectClass = "fn-point";
         }
         stateContainer.selectedFn = "-1";
-        stateContainer.isDisabled = true;
         stateContainer.selectedLabel = "";
-        stateContainer.fnName = "";
         stateContainer.touchAction = "auto";
         StateHasChanged();
-        //if (spreadsheet is not null)
-        //{
-        //    await spreadsheet.UpdateState();
-        //}
     }
     public async void ClearElement(string elementName)
     {
@@ -750,5 +776,14 @@
         {
             stateContainer.debugOutput = "";
         }
+    }
+    private void selectStart(MouseEventArgs e)
+    {
+        stateContainer.isSelecting = true;
+        stateContainer.startX = e.OffsetX / stateContainer.scaleZoom;
+        stateContainer.startY = e.OffsetY / stateContainer.scaleZoom;
+        stateContainer.selectX = stateContainer.startX;
+        stateContainer.selectY = stateContainer.startY;
+        StateHasChanged();
     }
 }

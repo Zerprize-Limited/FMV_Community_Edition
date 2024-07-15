@@ -5,7 +5,7 @@
 
 <div class="sidebar">
     <div class="v-panel pr-2">
-        <div class="d-flex pt-2">
+        <div class="d-flex pt-2 pb-0">
             <div class="d-flex flex-column">
                 <button id="newFnButton" class="btn btn-menu oi oi-plus" title=@Loc["NEW_TOOLTIP"] tabindex="3" @onclick=newFunction @onfocusin=@(() => stateContainer.isDisabled = false) @onkeydown=NextFn></button>
                 <AuthorizeView>
@@ -18,6 +18,14 @@
                 </AuthorizeView>
             </div>
             <textarea id="fnNameText" title=@Loc["NAME_FN"] tabindex="4" disabled=@stateContainer.isDisabled value=@stateContainer.fnName @onchange="FnNameChange" />
+        </div>
+        <div class="d-flex pt-0">
+            <AuthorizeView>
+                <Authorized>
+                    <button class="btn btn-desc oi oi-pencil" title=@Loc["FN_DESCRIPTION"] @onclick=expandDesc></button>
+                    <textarea class=@descriptionClass id="fnDescriptionText" title=@Loc["FN_DESCRIPTION"] tabindex="5" disabled=@stateContainer.isDisabled value=@(stateContainer.selectedFunction?.Description??"") @onchange="FnDescChange" />
+                </Authorized>
+            </AuthorizeView>
         </div>
         <div class="d-flex pt-2">
             <div class="d-flex flex-column align-items-center">
@@ -265,6 +273,7 @@
     private string setFocus = "";
     private string focusCheck = "";
     private string oldZoomText = "";
+    private string descriptionClass = "fmi-descS";
 
     protected void updateAll()
     {
@@ -485,6 +494,17 @@
             else
             {
                 stateContainer.sFnIDName(tempFnName);
+            }
+            refreshParent.InvokeAsync();
+        }
+    }
+    private void FnDescChange(ChangeEventArgs e)
+    {
+        if (stateContainer.selectedFn != "-1")
+        {
+            var tempFnDesc = e.Value?.ToString() ?? "";
+            {
+                stateContainer.sFnDesc(tempFnDesc);
             }
             refreshParent.InvokeAsync();
         }
@@ -959,5 +979,21 @@
             stateContainer.tempZoomA = 5;
         }
         refreshParent.InvokeAsync();
+    }
+    private void expandDesc()
+    {
+        if (descriptionClass == "fmi-descS")
+        {
+            descriptionClass = "fmi-descE";
+        }
+        else
+        {
+            descriptionClass = "fmi-descS";
+        }
+        StateHasChanged();
+    }
+    private string GetdescriptionClass()
+    {
+        return descriptionClass;
     }
 }

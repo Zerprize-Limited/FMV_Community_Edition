@@ -7,8 +7,10 @@ namespace FMV_Standard.Shared
 {
     public class Function
     {
+        public ElementReference elementReference;
         private string _fnStyle;
         private string _FunctionType;
+        private Dictionary<string, string[]> _variables = new Dictionary<string, string[]>();
         public Function(XmlNode fn)
         {
             this.IDNr = fn.SelectSingleNode("IDNr")!.InnerText;
@@ -32,10 +34,19 @@ namespace FMV_Standard.Shared
             this.profileR = fn.SelectSingleNode("@profileR")?.Value ?? "";
             this.profileC = fn.SelectSingleNode("@profileC")?.Value ?? "";
             this.profileT = fn.SelectSingleNode("@profileT")?.Value ?? "";
+            this.metadata = new List<string[]>();
+            if (fn.SelectSingleNode("metadata") is not null)
+            {
+                foreach (XmlElement key in fn.SelectSingleNode("metadata")!)
+                {
+                    this.metadata.Add(new string[] { key.Name, key.InnerText, key.Attributes["active"]?.Value ?? "", key.Attributes["equation"]?.Value ?? "", key.InnerText });
+                }
+            }
+            this.Description = fn.SelectSingleNode("Description")?.InnerText ?? "";
         }
+        public List<string[]> metadata { get; set; }
         public string options { get; set; }
         public string IDNr { get; set; }
-        public string IDName { get; set; }
         public int orphans { get; set; }
         public string isInput { get; set; }
         public string fnColorStyle { get; set; }
@@ -63,6 +74,9 @@ namespace FMV_Standard.Shared
         public string profileT { get; set; }
         public double startX { get; set; } = 0;
         public double startY { get; set; } = 0;
+        public Dictionary<string, double> Kvalues { get; set; } = new Dictionary<string, double>();
+        public Dictionary<string, string> Cvalues { get; set; } = new Dictionary<string, string>();
+        public string toolTip { get; set; } = "";
         public bool dragFn { get; set; } = false;
         public string fnClass { get; set; } = "fn-point";
         public string fnStyle
@@ -83,6 +97,8 @@ namespace FMV_Standard.Shared
                 options = $"{_fnStyle}:{_FunctionType}:";
             }
         }
+        public string IDName { get; set; }
+        public string Description { get; set; }
         public List<string> ReturnTextLines(int length)
         {
             var textLines = new List<string>();
@@ -215,6 +231,47 @@ namespace FMV_Standard.Shared
             totalT.Clear();
             fmiHighlight = "";
             wasActive = false;
+        }
+        public Dictionary<string, string[]> getVariables()
+        {
+            return _variables;
+        }
+        public void newVariable(string key, string[] value)
+        {
+            _variables[key] = value;
+        }
+        public string[]? getVariable(string key)
+        {
+            if (_variables.ContainsKey(key))
+            {
+                //Console.WriteLine($"getVariable: {key} | {_variables[key][0]} | {_variables[key][1]}");
+                return _variables[key];
+            }
+            else
+            {
+                return null;
+            }
+        }
+        public void resetVariables()
+        {
+            _variables = new Dictionary<string, string[]>();
+        }
+        public void removeVariable(string key)
+        {
+            foreach (var s in _variables.Where(kv => kv.Key.StartsWith(key)).ToList())
+            {
+                _variables.Remove(s.Key);
+                //Console.WriteLine($"Removed: {s.Key}");
+            }
+        }
+        public void resetKvalues()
+        {
+            Kvalues = new Dictionary<string, double>();
+            Cvalues = new Dictionary<string, string>();
+        }
+        public string returnTrue()
+        {
+            return "1";
         }
     }
 }

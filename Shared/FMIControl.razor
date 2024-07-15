@@ -25,7 +25,7 @@
 
     private List<Coupling> activeAspectsArray = new List<Coupling>();
     private List<string> trackExitFunctions = new List<string>();
-    private string stepTOTAL = "";
+    private int? stepTOTAL = null;
     private bool isPlaying = false;
     private Random rnd = new Random();
 
@@ -67,7 +67,7 @@
         isPlaying = false;
         stateContainer.selectedFn = "-1";
         stateContainer.selectedLabel = "";
-        stateContainer.cycleFMI = 0;
+        stateContainer.cycleFMI = -1;
         stateContainer.fmiMessage = "";
         foreach (var fn in stateContainer.functionList)
         {
@@ -179,6 +179,7 @@
     }
     private string bFMI_cycle()
     {
+        stateContainer.cycleFMI += 1;
         var returnString = "error";
         var check1 = 0;
         var fmiError = false;
@@ -531,7 +532,7 @@
                 }
             }
             returnString = stateContainer.cycleFMI.ToString();
-            if (stepTOTAL == "" || stepTOTAL == null || stepTOTAL == "0")
+            if (stepTOTAL == null)
             {
                 if (trackExitFunctions.Count == 0)
                 {
@@ -540,7 +541,7 @@
                     returnString = "End";
                 }
             }
-            else if (stepTOTAL == stateContainer.cycleFMI.ToString())
+            else if (stepTOTAL.HasValue && stepTOTAL != 0 && stepTOTAL <= stateContainer.cycleFMI)
             {
                 //bFMI.enabled = false;
                 //stateContainer.fmiMessage += "\nEnd";
@@ -550,8 +551,13 @@
         if (trackHighlights == 0)
         {
             stateContainer.fmiMessage += "No functions were activated during this cycle.\n";
+            if (!stepTOTAL.HasValue)
+            {
+                //bFMI.enabled = false;
+                //stateContainer.fmiMessage += "\nEnd";
+                returnString = "End";
+            }
         }
-        stateContainer.cycleFMI += 1;
         return returnString;
     }
 }

@@ -138,6 +138,10 @@
   <data name="COUPLING_NAME" xml:space="preserve">
     <value>Coupling Name</value>
   </data>
+  <data name="DESCRIPTION" xml:space="preserve">
+    <value>Beschreibung</value>
+    <comment>Source: FMV v2.2</comment>
+  </data>
   <data name="FMI_ACTIVATED" xml:space="preserve">
     <value>Aktiviert</value>
     <comment>Google translate</comment>

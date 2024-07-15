@@ -30,7 +30,7 @@
         {
             <PropertyColumn Title="FunctionType" Class="show-properties" Property="@(fn => render[$"{stateContainer.newFnStyle}:{fn.FunctionType}:Name"])" Sortable="true" />
             <TemplateColumn Title=@Loc["COLOUR"] Class="show-properties" SortBy="@sortByColour">
-                <input type="color" value=@returnColor(context.fnColorValue, false) inert />
+                <input type="color" value=@returnColor(context.fnColorValue, false) @onclick=@((e) => selectColour(context.fnColorValue)) @onclick:preventDefault />
             </TemplateColumn>
             <PropertyColumn Title=@Loc["FN_ORPHAN"] Class="show-properties" Property="@(fn => Convert.ToString(fn.orphans,2))" Sortable="true" />
             <PropertyColumn Title=@Loc["FN_INPUT"] Class="show-properties" Property="@(fn => fn.isInput)" Sortable="true" />
@@ -194,6 +194,15 @@
                 await JSRuntime.InvokeVoidAsync("focusInput", "mainWindow");
             }
         }
+    }
+    private void selectColour(string colour)
+    {
+        stateContainer.beginMultiSelect();
+        foreach (var function in stateContainer.functionList.FindAll(fn => fn.fnColorValue == colour))
+        {
+            stateContainer.selectedMulti.Add(function.IDNr);
+        }
+        refreshParent.InvokeAsync();
     }
     private async void saveSpreadsheet()
     {

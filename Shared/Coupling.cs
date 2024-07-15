@@ -211,7 +211,7 @@ namespace FMV_Standard.Shared
                 }
             }
         }
-        public string reDrawLines(double fnX, double fnY, bool isOutput)
+        public string reDrawLines(double fnX, double fnY, bool isOutput, double interX = 0, double interY = 0)
         {
             //this function gets all the line coordinates
             //draws two quadratic Bezier curves to connect an Output with another Aspect
@@ -221,6 +221,11 @@ namespace FMV_Standard.Shared
             {
                 drawTox = fnX;
                 drawToy = fnY;
+                if (interX != 0 || interY != 0)
+                {
+                    drawFromx = interX;
+                    drawFromy = interY;
+                }
             }
             else
             {
@@ -443,7 +448,7 @@ namespace FMV_Standard.Shared
             "M", drawFromx.ToString("0.##", CultureInfo.InvariantCulture), drawFromy.ToString("0.##", CultureInfo.InvariantCulture),
             "Q", drawAx.ToString("0.##", CultureInfo.InvariantCulture), drawAy.ToString("0.##", CultureInfo.InvariantCulture), drawIntx.ToString("0.##", CultureInfo.InvariantCulture), drawInty.ToString("0.##", CultureInfo.InvariantCulture),
             "Q", drawBx.ToString("0.##", CultureInfo.InvariantCulture), drawBy.ToString("0.##", CultureInfo.InvariantCulture), drawTox.ToString("0.##", CultureInfo.InvariantCulture), drawToy.ToString("0.##", CultureInfo.InvariantCulture)
-        };
+            };
             resetLabel();
             return string.Join(" ", curve2);
         }

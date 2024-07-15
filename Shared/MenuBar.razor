@@ -14,6 +14,11 @@
         </div>
         <button id="saveFileBtn" class="btn btn-menu oi oi-data-transfer-download" title=@Loc["SAVE_TOOLTIP"] @onclick=OnFileSave></button>
         <button class="btn btn-menu oi oi-image" title=@Loc["IMAGE_TOOLTIP"] @onclick=OnImageSave></button>
+        <AuthorizeView>
+            <Authorized>
+                <button class="btn btn-menu oi oi-document" title="PDF" @onclick=b_showPDF></button>
+            </Authorized>
+        </AuthorizeView>
         <button class="btn btn-menu oi oi-zoom-out" title=@Loc["ZOOM_MINUS_TOOLTIP"] @onclick=zoomMinus @onfocusin=@(() => stateContainer.updateUndo())></button>
         <button class="btn btn-menu oi oi-fullscreen-enter" title=@Loc["ZOOM_FULLSCREEN"] @onclick=zoomFill @onfocusin=@(() => stateContainer.updateUndo())></button>
         <button class="btn btn-menu oi oi-zoom-in" title=@Loc["ZOOM_PLUS_TOOLTIP"] @onclick=zoomPlus @onfocusin=@(() => stateContainer.updateUndo())></button>
@@ -282,6 +287,11 @@
     private void ShowInfo()
     {
         stateContainer.showModal = true;
+        refreshParent.InvokeAsync();
+    }
+    private void b_showPDF()
+    {
+        stateContainer.showPDFreport = !stateContainer.showPDFreport;
         refreshParent.InvokeAsync();
     }
 }

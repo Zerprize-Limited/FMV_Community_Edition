@@ -1,0 +1,459 @@
+﻿@inject StateContainer stateContainer
+@inject IConfiguration render
+
+<!--This fragment is for all of the Functions that are selected and highlighted. There is only one of these on the main index and it draws all selected functions and their couplings.-->
+@foreach (var function in stateContainer.functionList.FindAll(x => stateContainer.selectedMulti.Contains(x.IDNr)))
+{
+    <!--this draws the highlighted couplings attached if the function is selected 
+        they are drawn here with the function (and not with the other couplings) to make it easier to redraw them when the selected function is moved-->
+    foreach (Coupling coupling in stateContainer.couplingList.FindAll(x => (x.outputFn == function.IDNr || (x.toFn == function.IDNr && !(stateContainer.selectedMulti.Contains(x.outputFn) && stateContainer.selectedMulti.Contains(x.toFn))))))
+    {
+        if (coupling != null && function != null)
+        {
+            var displayAspectText = coupling.ReturnTextLines(int.Parse(render[$"{function.fnStyle}:aspect-font-wrap"]!));
+            var aspectTextCount = displayAspectText.Count;
+            double fnX = function.x;
+            double fnY = function.y;
+            double deltaX;
+            double deltaY;
+            double interX = 0.0;
+            double interY = 0.0;
+            var isOutput = (coupling.outputFn == function.IDNr);
+            if (isOutput)
+            {
+                deltaX = 93.5;
+                deltaY = 50;
+                double.TryParse(render[$"{function.fnStyle}:aspectX:O"], CultureInfo.InvariantCulture, out deltaX);
+                double.TryParse(render[$"{function.fnStyle}:aspectY:O"], CultureInfo.InvariantCulture, out deltaY);
+                fnX += deltaX;
+                fnY += deltaY;
+                if (stateContainer.selectedMulti.Contains(coupling.toFn))
+                {
+                    var _toFn = stateContainer.functionList.Find(x => x.IDNr == coupling.toFn);
+                    if (_toFn is not null)
+                    {
+                        deltaX = 6;
+                        deltaY = 50;
+                        double.TryParse(render[$"{function.fnStyle}:aspectX:{coupling.toType}"], CultureInfo.InvariantCulture, out deltaX);
+                        double.TryParse(render[$"{function.fnStyle}:aspectY:{coupling.toType}"], CultureInfo.InvariantCulture, out deltaY);
+                        interX = _toFn.x + deltaX;
+                        interY = _toFn.y + deltaY;
+                    }
+                }
+            }
+            else
+            {
+                deltaX = 6;
+                deltaY = 50;
+                double.TryParse(render[$"{function.fnStyle}:aspectX:{coupling.toType}"], CultureInfo.InvariantCulture, out deltaX);
+                double.TryParse(render[$"{function.fnStyle}:aspectY:{coupling.toType}"], CultureInfo.InvariantCulture, out deltaY);
+                fnX += deltaX;
+                fnY += deltaY;
+            }
+            <path fill="none" stroke-width="5" stroke=@render[$"{function.fnStyle}:selected-fill"] stroke-linecap="round" opacity="0.5" d=@coupling.reDrawLines(fnX,fnY,isOutput, interX, interY) />
+            <g transform="scale(@(stateContainer.tempZoomA.ToString("0.##", CultureInfo.InvariantCulture)))" display="@stateContainer.aspectLabelsDisplay">
+                <rect x=@((coupling.labelX/stateContainer.tempZoomA - coupling.Twidth / 2).ToString("0.##", CultureInfo.InvariantCulture)) y=@((coupling.labelY/stateContainer.tempZoomA - aspectTextCount * 5).ToString("0.##", CultureInfo.InvariantCulture)) width=@coupling.Twidth.ToString("0.##", CultureInfo.InvariantCulture) height=@(Math.Min(5 + aspectTextCount * 8, 50)) style="fill: #FFFFFF; stroke: none; opacity: 0.6" rx="5" ry="5" />
+                <text x=@((coupling.labelX/stateContainer.tempZoomA).ToString("0.##", CultureInfo.InvariantCulture)) y=@((coupling.labelY/stateContainer.tempZoomA - aspectTextCount * 5).ToString("0.##", CultureInfo.InvariantCulture)) font-size="5pt" text-anchor="middle" font-family="'PT Sans Caption', sans-serif">
+                    @for (int i = 0; i < aspectTextCount; i++)
+                    {
+                        <tspan x=@((coupling.labelX/stateContainer.tempZoomA).ToString("0.##", CultureInfo.InvariantCulture)) dy="8">@displayAspectText[i]</tspan>
+                    }
+                </text>
+            </g>
+        }
+    }
+}
+@foreach (var function in stateContainer.functionList.FindAll(x => stateContainer.selectedMulti.Contains(x.IDNr)))
+{
+    var displayFnText = function.ReturnTextLines(int.Parse(render[$"{function.fnStyle}:fn-font-wrap"]!));
+    var fnTextCount = displayFnText.Count;
+    <g class=@function.fnClass transform="translate(@function.x.ToString("0.##", CultureInfo.InvariantCulture),@function.y.ToString("0.##", CultureInfo.InvariantCulture))" @onmousedown="MoveFnStart" @ontouchstart="MoveFnStartTouch" @onmousemove="MoveFn" @ontouchmove="MoveFnTouch" @onmouseup="MoveFnStop" @ontouchend="MoveFnStopTouch">
+        @if (function.fmiHighlight != "")
+        { //this is the highlight if the function is highlighted by the FMI
+            <circle id="fmi-highlight" style=@highlightSpeed() cx="50" cy="50" r=@render[$"{function.fnStyle}:highlight-r"] fill=@($"url(#{function.fmiHighlight})") opacity="0.75" />
+        }
+        @if (stateContainer.selectedMulti.Contains(function.IDNr))
+        {
+            if (function.dragFn)
+            { //this increases the size of the function during dragging so we don't lose the mouse pointer
+                <circle cx="50" cy="50" fill="white" opacity="0" r="100%" />
+            }
+            //this is the highlight if the function is selected
+            <circle cx="50" cy="50" r=@render[$"{function.fnStyle}:highlight-r"] fill="url(#selected-fill)" />
+        }
+        @if (function.orphans > 0)
+        {
+            if (((function.orphans >> 0) & 1) == 1) //Input
+            {
+                <circle stroke-width="5" stroke="#FF0000" fill="none" opacity="0.7" cx=@render[$"{function.fnStyle}:aspectX:I"] cy=@render[$"{function.fnStyle}:aspectY:I"] r="7" />
+            }
+            if (((function.orphans >> 1) & 1) == 1) //Output
+            {
+                <circle stroke-width="5" stroke="#FF0000" fill="none" opacity="0.7" cx=@render[$"{function.fnStyle}:aspectX:O"] cy=@render[$"{function.fnStyle}:aspectY:O"] r="7" />
+            }
+            if (((function.orphans >> 2) & 1) == 1) //Precondition
+            {
+                <circle stroke-width="5" stroke="#FF0000" fill="none" opacity="0.7" cx=@render[$"{function.fnStyle}:aspectX:P"] cy=@render[$"{function.fnStyle}:aspectY:P"] r="7" />
+            }
+            if (((function.orphans >> 3) & 1) == 1) //Resource
+            {
+                <circle stroke-width="5" stroke="#FF0000" fill="none" opacity="0.7" cx=@render[$"{function.fnStyle}:aspectX:R"] cy=@render[$"{function.fnStyle}:aspectY:R"] r="7" />
+            }
+            if (((function.orphans >> 4) & 1) == 1) //Control
+            {
+                <circle stroke-width="5" stroke="#FF0000" fill="none" opacity="0.7" cx=@render[$"{function.fnStyle}:aspectX:C"] cy=@render[$"{function.fnStyle}:aspectY:C"] r="7" />
+            }
+            if (((function.orphans >> 5) & 1) == 1) //Time
+            {
+                <circle stroke-width="5" stroke="#FF0000" fill="none" opacity="0.7" cx=@render[$"{function.fnStyle}:aspectX:T"] cy=@render[$"{function.fnStyle}:aspectY:T"] r="7" />
+            }
+        }
+        <!-- This is the Function main outline -->
+        <defs>
+            <radialGradient id="fnVariable" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                <stop offset="0%" style="stop-color:@render[$"{function.options}fn-stroke"];stop-opacity:0.25" />
+                <stop offset="80%" style="stop-color:@render[$"{function.options}fn-stroke"];stop-opacity:0.25" />
+                <stop offset="80%" style="stop-color:@render[$"{function.options}fn-stroke"];stop-opacity:1" />
+                <stop offset="100%" style="stop-color:@render[$"{function.options}fn-stroke"];stop-opacity:1" />
+            </radialGradient>
+        </defs>
+        <g stroke-width=@render[$"{function.options}fn-stroke-width"] stroke="url(#fnVariable)">
+            @if (!String.IsNullOrEmpty(render[$"{function.options}fn-connector-path"]))
+            {
+                <path d=@render[$"{function.options}fn-connector-path"] />
+            }
+            @if (!String.IsNullOrEmpty(render[$"{function.options}fn-path"]))
+            {
+                <path fill=@render[$"{function.options}fn-fill"] fill-opacity=@render[$"{function.options}fn-opacity"] d=@render[$"{function.options}fn-path"] />
+            }
+        </g>
+        @if (function.fnColorStyle != null)
+        {
+            if (function.fnColorStyle.Length != 0)
+            {
+                isFnColor = true;
+                styleStroke = render[$"{function.options}fn-color-width"]!;
+                switch (function.fnColorStyle)
+                {
+                    case "blue": styleColor = "#01A6DB"; break;
+                    case "green": styleColor = "#17BD01"; break;
+                    case "grey": styleColor = "#838383"; break;
+                    case "red": styleColor = "#E50000"; break;
+                    case "yellow": styleColor = "#BAB727"; break;
+                    case "purple": styleColor = "#9070C0"; break;
+                    case "white": styleColor = "#FFFFFF"; break;
+                    case "custom": 
+                        {
+                            if (function.fnColorValue.StartsWith("#"))
+                            {
+                                styleColor = function.fnColorValue;
+                            }
+                            else
+                            {
+                                styleColor = $"#{Convert.ToUInt32(function.fnColorValue).ToString("X6")}";
+                            }
+                            break;
+                        }
+                    default: styleColor = render[$"{function.options}aspect-stroke"] ?? "#FFFFFF"; styleStroke = render[$"{function.options}aspect-stroke-width"] ?? "0"; break;
+                }
+                if (styleColor != "#FFFFFF")
+                {
+                    <g>
+                        @if (!String.IsNullOrEmpty(render[$"{function.options}fn-color-path"]))
+                        {
+                            <g stroke-width=@styleStroke stroke=@styleColor>
+                                <path fill="none" d=@render[$"{function.options}fn-color-path"] />
+                            </g>
+                        }
+                        @if (!String.IsNullOrEmpty(render[$"{function.options}fn-path"]))
+                        {
+                            <g stroke-width=@render[$"{function.options}fn-stroke-width"] stroke="url(#fnVariable)">
+                                <path fill="none" d=@render[$"{function.options}fn-path"] />
+                            </g>
+                        }
+                    </g>
+                }
+                else
+                {
+                    isFnColor = false;
+                }
+            }
+            else
+            {
+                isFnColor = false;
+            }
+        }
+        else
+        {
+            isFnColor = false;
+        }
+        @if (!String.IsNullOrEmpty(render[$"{function.options}aspect-stroke"]))
+        {
+            <g stroke-width=@render[$"{function.options}aspect-stroke-width"] stroke=@render[$"{function.options}aspect-stroke"]>
+                <circle cx=@render[$"{function.fnStyle}:aspectX:I"] cy=@render[$"{function.fnStyle}:aspectY:I"] r=@render[$"{function.options}aspect-r"] fill=@render[$"{function.options}aspect-fill"] />
+                <circle cx=@render[$"{function.fnStyle}:aspectX:O"] cy=@render[$"{function.fnStyle}:aspectY:O"] r=@render[$"{function.options}aspect-r"] fill=@render[$"{function.options}aspect-fill"] />
+                <circle cx=@render[$"{function.fnStyle}:aspectX:T"] cy=@render[$"{function.fnStyle}:aspectY:T"] r=@render[$"{function.options}aspect-r"] fill=@render[$"{function.options}aspect-fill"] />
+                <circle cx=@render[$"{function.fnStyle}:aspectX:C"] cy=@render[$"{function.fnStyle}:aspectY:C"] r=@render[$"{function.options}aspect-r"] fill=@render[$"{function.options}aspect-fill"] />
+                <circle cx=@render[$"{function.fnStyle}:aspectX:P"] cy=@render[$"{function.fnStyle}:aspectY:P"] r=@render[$"{function.options}aspect-r"] fill=@render[$"{function.options}aspect-fill"] />
+                <circle cx=@render[$"{function.fnStyle}:aspectX:R"] cy=@render[$"{function.fnStyle}:aspectY:R"] r=@render[$"{function.options}aspect-r"] fill=@render[$"{function.options}aspect-fill"] />
+            </g>
+        }
+        @if (String.IsNullOrEmpty(render[$"{function.options}fn-path"])) //modern background
+        {
+            if (!isFnColor)
+            {
+                styleStroke = @render[$"{function.options}aspect-alt-stroke-width"]!;
+                styleColor = @render[$"{function.options}aspect-alt-stroke"]!;
+            }
+            string isIO;
+            double fontAdjustX;
+            double fontAdjustY = 2.8 - (6 - double.Parse(render[$"{function.options}aspect-font-size"]!, CultureInfo.InvariantCulture)) / 2;
+            if (function.isInput == "true")
+            {
+                isIO = "I";
+                fontAdjustX = -1.8 + (6 - double.Parse(render[$"{function.options}aspect-font-size"]!, CultureInfo.InvariantCulture)) / 2;
+            }
+            else
+            {
+                isIO = "O";
+                fontAdjustX = -3.1 + (6 - double.Parse(render[$"{function.options}aspect-font-size"]!, CultureInfo.InvariantCulture)) / 2;
+            }
+            <g stroke-width=@styleStroke stroke=@styleColor>
+                <circle cx=@render[$"{function.fnStyle}:aspectX:{isIO}"] cy=@render[$"{function.fnStyle}:aspectY:{isIO}"] r=@render[$"{function.options}aspect-r"] fill=@render[$"{function.options}aspect-alt-fill"] />
+            </g>
+            <g font-size="@(render[$"{function.options}aspect-font-size"]+"pt")" font-family="'PT Sans Caption', sans-serif" fill=@render[$"{function.options}aspect-font-color"]>
+                <text x=@((double.Parse(render[$"{function.fnStyle}:aspectX:{isIO}"]!,CultureInfo.InvariantCulture)+fontAdjustX).ToString("0.##", CultureInfo.InvariantCulture)) y=@((double.Parse(render[$"{function.fnStyle}:aspectY:{isIO}"]!,CultureInfo.InvariantCulture)+fontAdjustY).ToString("0.##", CultureInfo.InvariantCulture))>@isIO</text>
+            </g>
+            <rect x="@((50 - double.Parse(render[$"{function.options}fn-alt-width"]!, CultureInfo.InvariantCulture)/2.0).ToString("0.##", CultureInfo.InvariantCulture))" y="@((50 - fnTextCount * 5*stateContainer.tempZoomF - 5).ToString("0.##", CultureInfo.InvariantCulture))"
+                    rx=@render[$"{function.options}fn-alt-r"] ry=@render[$"{function.options}fn-alt-r"] width=@render[$"{function.options}fn-alt-width"] height="@((9 + fnTextCount * 10*stateContainer.tempZoomF).ToString("0.##", CultureInfo.InvariantCulture))" fill=@render[$"{function.options}fn-alt-fill"] style="stroke:none;opacity:1" />
+        }
+        else 
+        {
+            double fontAdjust = (6 - double.Parse(render[$"{function.options}aspect-font-size"]!, CultureInfo.InvariantCulture)) / 2;
+            <g font-size="@(render[$"{function.options}aspect-font-size"]+"pt")" font-family="'PT Sans Caption', sans-serif" fill=@render[$"{function.options}aspect-font-color"]>
+                <text x=@((double.Parse(render[$"{function.fnStyle}:aspectX:T"]!,CultureInfo.InvariantCulture)-2.6+fontAdjust).ToString("0.##", CultureInfo.InvariantCulture)) y=@((double.Parse(render[$"{function.fnStyle}:aspectY:T"]!,CultureInfo.InvariantCulture)+2.8-fontAdjust).ToString("0.##", CultureInfo.InvariantCulture))>T</text>
+                <text x=@((double.Parse(render[$"{function.fnStyle}:aspectX:C"]!,CultureInfo.InvariantCulture)-3.1+fontAdjust).ToString("0.##", CultureInfo.InvariantCulture)) y=@((double.Parse(render[$"{function.fnStyle}:aspectY:C"]!,CultureInfo.InvariantCulture)+2.8-fontAdjust).ToString("0.##", CultureInfo.InvariantCulture))>C</text>
+                <text x=@((double.Parse(render[$"{function.fnStyle}:aspectX:I"]!,CultureInfo.InvariantCulture)-1.8+fontAdjust).ToString("0.##", CultureInfo.InvariantCulture)) y=@((double.Parse(render[$"{function.fnStyle}:aspectY:I"]!,CultureInfo.InvariantCulture)+2.8-fontAdjust).ToString("0.##", CultureInfo.InvariantCulture))>I</text>
+                <text x=@((double.Parse(render[$"{function.fnStyle}:aspectX:O"]!,CultureInfo.InvariantCulture)-3.1+fontAdjust).ToString("0.##", CultureInfo.InvariantCulture)) y=@((double.Parse(render[$"{function.fnStyle}:aspectY:O"]!,CultureInfo.InvariantCulture)+2.8-fontAdjust).ToString("0.##", CultureInfo.InvariantCulture))>O</text>
+                <text x=@((double.Parse(render[$"{function.fnStyle}:aspectX:P"]!,CultureInfo.InvariantCulture)-2.4+fontAdjust).ToString("0.##", CultureInfo.InvariantCulture)) y=@((double.Parse(render[$"{function.fnStyle}:aspectY:P"]!,CultureInfo.InvariantCulture)+2.8-fontAdjust).ToString("0.##", CultureInfo.InvariantCulture))>P</text>
+                <text x=@((double.Parse(render[$"{function.fnStyle}:aspectX:R"]!,CultureInfo.InvariantCulture)-2.7+fontAdjust).ToString("0.##", CultureInfo.InvariantCulture)) y=@((double.Parse(render[$"{function.fnStyle}:aspectY:R"]!,CultureInfo.InvariantCulture)+2.8-fontAdjust).ToString("0.##", CultureInfo.InvariantCulture))>R</text>
+            </g>
+        }
+        <!-- This is the Function text -->
+        @if (function.metadata.Exists(x => x[0] == "Hyperlink"))
+        {
+            <a href=@(function.metadata.Find(x => x[0] == "Hyperlink")![1]) target="_blank">
+                <text transform="scale(@stateContainer.tempZoomF.ToString("0.##", CultureInfo.InvariantCulture))" x="@((50 / stateContainer.tempZoomF).ToString("0.##", CultureInfo.InvariantCulture))" y="@((50 / stateContainer.tempZoomF - fnTextCount * 5 - 2).ToString("0.##", CultureInfo.InvariantCulture))"
+                      font-size="6pt" text-anchor="middle" width="60" height="40" font-family="'PT Sans Caption', sans-serif" fill=@render[$"{function.options}fn-font-color"]>
+                    @for (int i = 0; i < fnTextCount; i++)
+                    {
+                        <tspan x="@((50 / stateContainer.tempZoomF).ToString("0.##", CultureInfo.InvariantCulture))" dy="10">@displayFnText[i]</tspan>
+                    }
+                </text>
+            </a>
+        }
+        else
+        {
+            <g>
+                <text transform="scale(@stateContainer.tempZoomF.ToString("0.##", CultureInfo.InvariantCulture))" x="@((50 / stateContainer.tempZoomF).ToString("0.##", CultureInfo.InvariantCulture))" y="@((50 / stateContainer.tempZoomF - fnTextCount * 5 - 2).ToString("0.##", CultureInfo.InvariantCulture))"
+                      font-size="6pt" text-anchor="middle" width="60" height="40" font-family="'PT Sans Caption', sans-serif" fill=@render[$"{function.options}fn-font-color"]>
+                    @for (int i = 0; i < fnTextCount; i++)
+                    {
+                        <tspan x="@((50 / stateContainer.tempZoomF).ToString("0.##", CultureInfo.InvariantCulture))" dy="10">@displayFnText[i]</tspan>
+                    }
+                </text>
+            </g>
+        }
+        @if (function.toolTip.Length > 0)
+        {
+            <title>@function.toolTip</title>
+            for (var i = 1; i <= 6; i++)
+            {
+                var path = render[$"{function.fnStyle}:tracer-{i}-path"]!.Split(" ");
+                var textX = (double.Parse(path[1], CultureInfo.InvariantCulture) + 0.5 * double.Parse(path[4], CultureInfo.InvariantCulture)).ToString("0.##", CultureInfo.InvariantCulture);
+                var textY = (3 + double.Parse(path[2], CultureInfo.InvariantCulture) + 0.5 * double.Parse(path[5], CultureInfo.InvariantCulture)).ToString("0.##", CultureInfo.InvariantCulture);
+                <g transform=@render[$"{function.fnStyle}:tracer-{i}-transform"]>
+                    @if (function.Cvalues.ContainsKey($"{i}C_stroke"))
+                    {
+                        <g stroke-width="12" stroke=@function.Cvalues[$"{i}C_stroke"] stroke-linecap="round"
+                           opacity=@function.Cvalues[$"{i}C_opacity"]>
+                            <path fill="none" d=@render[$"{function.fnStyle}:tracer-{i}-path"] />
+                        </g>
+                    }
+                    @if (function.Cvalues.ContainsKey($"{i}Y_stroke"))
+                    {
+                        <g stroke-width="12" stroke=@function.Cvalues[$"{i}Y_stroke"] stroke-linecap="round"
+                           opacity=@function.Cvalues[$"{i}Y_opacity"]>
+                            <path fill="none" d=@render[$"{function.fnStyle}:tracer-{i}-path"] />
+                        </g>
+                    }
+                    @if (function.Cvalues.ContainsKey($"{i}M_stroke"))
+                    {
+                        <g stroke-width="12" stroke=@function.Cvalues[$"{i}M_stroke"] stroke-linecap="round"
+                           opacity=@function.Cvalues[$"{i}M_opacity"]>
+                            <path fill="none" d=@render[$"{function.fnStyle}:tracer-{i}-path"] />
+                        </g>
+                    }
+                    @if (function.Kvalues.ContainsKey($"K{i}"))
+                    {
+                        <g>
+                            <text x=@textX y=@textY font-size="5pt" text-anchor="middle" width="60" height="40" font-family="'PT Sans Caption', sans-serif" fill=@render[$"{function.options}fn-font-color"]>
+                                <tspan>@function.Kvalues[$"K{i}"].ToString()</tspan>
+                            </text>
+                        </g>
+                    }
+                </g>
+            }
+        }
+    </g>
+}
+
+@code {
+    private string styleStroke = "1";
+    private string styleColor = "#999999";
+    private bool isFnColor = false;
+
+    [Parameter]
+    public EventCallback refreshParent { get; set; }
+
+    public void UpdateState()
+    {
+        StateHasChanged();
+    }
+
+    private string highlightSpeed()
+    {
+        if (stateContainer.cycleDelay >= 1000)
+        {
+            return "animation-duration: 1s";
+        }
+        else
+        {
+            return $"animation-duration: {((double)stateContainer.cycleDelay / 1000).ToString("0.0#s")}";
+        }
+    }
+    private void MoveFnStartTouch(TouchEventArgs e)
+    {
+        if (stateContainer.selectedFn != "-1" && stateContainer.selectedFunction?.IDName == "")
+        {
+            stateContainer.defaultFnLabel();
+        }
+        foreach (var function in stateContainer.functionList.FindAll(x => stateContainer.selectedMulti.Contains(x.IDNr)))
+        {
+            if (function is not null)
+            {
+                function.startX = e.Touches[0].ClientX / stateContainer.scaleZoom - function.x;
+                function.startY = e.Touches[0].ClientY / stateContainer.scaleZoom - function.y;
+                function.dragFn = true;
+                function.fnClass = "fn-move";
+                stateContainer.touchAction = "none";
+            }
+        }
+    }
+    private void MoveFnStart(MouseEventArgs e)
+    {
+        if (stateContainer.selectedFn != "-1" && stateContainer.selectedFunction?.IDName == "")
+        {
+            stateContainer.defaultFnLabel();
+        }
+        foreach (var function in stateContainer.functionList.FindAll(x => stateContainer.selectedMulti.Contains(x.IDNr)))
+        {
+            if (function is not null)
+            {
+                function.startX = e.ClientX / stateContainer.scaleZoom - function.x;
+                function.startY = e.ClientY / stateContainer.scaleZoom - function.y;
+                function.dragFn = true;
+                function.fnClass = "fn-move";
+            }
+        }
+    }
+    private void MoveFnTouch(TouchEventArgs e)
+    {
+        foreach (var function in stateContainer.functionList.FindAll(x => stateContainer.selectedMulti.Contains(x.IDNr)))
+        {
+            if (function.dragFn && e.Touches.Length == 1)
+            {
+                function.x = (e.Touches[0].ClientX / stateContainer.scaleZoom - function.startX);
+                function.y = (e.Touches[0].ClientY / stateContainer.scaleZoom - function.startY);
+                if (function.x > stateContainer.viewWidth - 120)
+                {
+                    stateContainer.viewWidth += 120;
+                    stateContainer.canvasWidth = stateContainer.viewWidth * stateContainer.scaleZoom;
+                    refreshParent.InvokeAsync();
+                }
+                if (function.y > stateContainer.viewHeight - 120)
+                {
+                    stateContainer.viewHeight += 120;
+                    stateContainer.canvasHeight = stateContainer.viewHeight * stateContainer.scaleZoom;
+                    refreshParent.InvokeAsync();
+                }
+            }
+        }
+    }
+    private void MoveFn(MouseEventArgs e)
+    {
+        foreach (var function in stateContainer.functionList.FindAll(x => stateContainer.selectedMulti.Contains(x.IDNr)))
+        {
+            if (function.dragFn)
+            {
+                function.x = (e.ClientX / stateContainer.scaleZoom - function.startX);
+                function.y = (e.ClientY / stateContainer.scaleZoom - function.startY);
+                if (function.x > stateContainer.viewWidth - 120)
+                {
+                    stateContainer.viewWidth += 120;
+                    stateContainer.canvasWidth = stateContainer.viewWidth * stateContainer.scaleZoom;
+                    refreshParent.InvokeAsync();
+                }
+                if (function.y > stateContainer.viewHeight - 120)
+                {
+                    stateContainer.viewHeight += 120;
+                    stateContainer.canvasHeight = stateContainer.viewHeight * stateContainer.scaleZoom;
+                    refreshParent.InvokeAsync();
+                }
+            }
+        }
+    }
+    private void MoveFnStopTouch(TouchEventArgs e)
+    {
+        stateContainer.updateUndo();
+        foreach (var function in stateContainer.functionList.FindAll(x => stateContainer.selectedMulti.Contains(x.IDNr)))
+        {
+            if (function.dragFn)
+            {
+                if (stateContainer.couplingList.Count > 0)
+                {
+                    foreach (Coupling coupling in stateContainer.couplingList.FindAll(x => x.outputFn == function.IDNr || x.toFn == function.IDNr))
+                    {
+                        stateContainer.projectData_Undo[0].SelectSingleNode($"//FM/Aspects/Aspect[Name=\"{coupling.Name}\"]/Curve2")!.InnerText = coupling.curve2;
+                        stateContainer.projectData_Undo[0].SelectSingleNode($"//FM/Aspects/Aspect[Name=\"{coupling.Name}\"]/Curve")!.InnerText = coupling.curve;
+                    }
+                }
+                function.dragFn = false;
+                function.fnClass = "fn-hover";
+                stateContainer.updateFnXY(function.x, function.y, function.IDNr);
+                stateContainer.touchAction = "auto";
+            }
+        }
+    }
+    private void MoveFnStop(MouseEventArgs e)
+    {
+        stateContainer.updateUndo();
+        foreach (var function in stateContainer.functionList.FindAll(x => stateContainer.selectedMulti.Contains(x.IDNr)))
+        {
+            if (function.dragFn)
+            {
+                if (stateContainer.couplingList.Count > 0)
+                {
+                    foreach (Coupling coupling in stateContainer.couplingList.FindAll(x => x.outputFn == function.IDNr || x.toFn == function.IDNr))
+                    {
+                        stateContainer.projectData_Undo[0].SelectSingleNode($"//FM/Aspects/Aspect[Name=\"{coupling.Name}\"]/Curve2")!.InnerText = coupling.curve2;
+                        stateContainer.projectData_Undo[0].SelectSingleNode($"//FM/Aspects/Aspect[Name=\"{coupling.Name}\"]/Curve")!.InnerText = coupling.curve;
+                    }
+                }
+                function.dragFn = false;
+                function.fnClass = "fn-hover";
+                stateContainer.updateFnXY(function.x, function.y, function.IDNr);
+            }
+        }
+    }
+}

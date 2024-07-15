@@ -1,0 +1,241 @@
+﻿@inject StateContainer stateContainer
+@inject IJSRuntime JSRuntime
+@inject IStringLocalizer<Localization.SharedResource> Loc
+
+<div id="myModal" class="modal fade show" style="display:block" aria-modal="true" role="dialog" tabindex="100" @onkeydown=checkforEsc @onclick=clickOut>
+    <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered modal-lg" @onclick=clickNothing @onclick:stopPropagation>
+        <div class="modal-content">
+            <div class="modal-header sticky-top bg-white p-0 pl-1 align-items-center">
+                @stateContainer.fileName.Replace(".xfmv", "-text")
+                <div class="float-right">
+                    <button class="btn btn-menu oi oi-file" style="top:0" title=@Loc["SAVE_TOOLTIP"] @onclick=printFMILog />
+                    <button type="button" class="close m-0 pt-1 pb-1 pl-3 pr-3" @onclick="@(() => OnClose.InvokeAsync(false))">&times;</button>
+                </div>
+            </div>
+            <div id="PDFtable" class="modal-body p-1" style="font-family:'PT Sans',sans-serif">
+                @if (stateContainer.fileLoaded)
+                {
+                    @foreach (Function fn in stateContainer.functionList)
+                    {
+                        var firstInput = true;
+                        var firstOutput = true;
+                        var firstPrecon = true;
+                        var firstResource = true;
+                        var firstControl = true;
+                        var firstTime = true;
+                        <table class="table" style="width:100%;border-spacing:0">
+                            <tr>
+                                <td style="width:20%;background-color:lightgrey;padding:0.25rem;border-top:thin solid lightgrey;border-right:thin solid lightgrey">@Loc["NAME_FN"]</td>
+                                <td style="width:80%;padding:0.25rem;border-top:thin solid lightgrey;border-right:thin solid lightgrey">@fn.IDName</td>
+                            </tr>
+                            <tr>
+                                <td style="width:20%;padding:0.25rem;;border-top:thin solid lightgrey;border-right:thin solid lightgrey">@Loc["DESCRIPTION"]</td>
+                                <td style="width:80%;padding:0.25rem;border-top:thin solid lightgrey;border-right:thin solid lightgrey">@fn.Description</td>
+                            </tr>
+                            <tr>
+                                <td style="width:20%;background-color:lightgrey;padding:0.25rem;border-top:thin solid lightgrey;border-right:thin solid lightgrey">@Loc["S_ASPECTS"]</td>
+                                <td style="width:80%;background-color:lightgrey;padding:0.25rem;border-top:thin solid lightgrey;border-right:thin solid lightgrey">@Loc["ASPECT_LABEL"]</td>
+                            </tr>
+                            @foreach (Aspect input in stateContainer.aspectsList.FindAll(x => x.FunctionIDNr == fn.IDNr && x.Type == "Input"))
+                            {
+                                var iStyle = "width:80%;padding:0.25rem;border-top:thin solid lightgrey;border-right:thin solid lightgrey";
+                                if (input.Orphan == "true")
+                                {
+                                    iStyle += ";background-color:lightcoral";
+                                }
+                                <tr>
+                                @if (firstInput)
+                                {
+                                    firstInput = false;
+                                        <td style="width:20%;padding:0.25rem;vertical-align:top;border-top:thin solid lightgrey;border-right:thin solid lightgrey" rowspan="@(stateContainer.aspectsList.FindAll(x => x.FunctionIDNr == fn.IDNr && x.Type == "Input").Count)">@Loc["INPUT"]</td>
+                                }
+                                    <td style=@iStyle>@input.IDName</td>
+                                </tr>
+                            }
+                            @if (firstInput)
+                            {
+                                firstInput = false;
+                                <tr>
+                                    <td style="width:20%;padding:0.25rem;vertical-align:top;border-top:thin solid lightgrey;border-right:thin solid lightgrey">@Loc["INPUT"]</td>
+                                    <td style="width:80%;padding:0.25rem;border-top:thin solid lightgrey;border-right:thin solid lightgrey"></td>
+                                </tr>
+                            }
+                            @foreach (Aspect output in stateContainer.outputsList.FindAll(x => x.FunctionIDNr == fn.IDNr))
+                            {
+                                var oStyle = "width:80%;padding:0.25rem;border-top:thin solid lightgrey;border-right:thin solid lightgrey";
+                                if (output.Orphan == "true")
+                                {
+                                    oStyle += ";background-color:lightcoral";
+                                }
+                                <tr>
+                                    @if (firstOutput)
+                                    {
+                                        firstOutput = false;
+                                        <td style="width:20%;padding:0.25rem;vertical-align:top;border-top:thin solid lightgrey;border-right:thin solid lightgrey" rowspan="@(stateContainer.outputsList.FindAll(x => x.FunctionIDNr == fn.IDNr).Count)">@Loc["OUTPUT"]</td>
+                                    }
+                                    <td style=@oStyle>@output.IDName</td>
+                                </tr>
+                            }
+                            @if (firstOutput)
+                            {
+                                firstOutput = false;
+                                <tr>
+                                    <td style="width:20%;padding:0.25rem;vertical-align:top;border-top:thin solid lightgrey;border-right:thin solid lightgrey">@Loc["OUTPUT"]</td>
+                                    <td style="width:80%;padding:0.25rem;border-top:thin solid lightgrey;border-right:thin solid lightgrey"></td>
+                                </tr>
+                            }
+                            @foreach (Aspect aspect in stateContainer.aspectsList.FindAll(x => x.FunctionIDNr == fn.IDNr && x.Type == "Precondition"))
+                            {
+                                var pStyle = "width:80%;padding:0.25rem;border-top:thin solid lightgrey;border-right:thin solid lightgrey";
+                                if (aspect.Orphan == "true")
+                                {
+                                    pStyle += ";background-color:lightcoral";
+                                }
+                                <tr>
+                                    @if (firstPrecon)
+                                    {
+                                        firstPrecon = false;
+                                        <td style="width:20%;padding:0.25rem;vertical-align:top;border-top:thin solid lightgrey;border-right:thin solid lightgrey" rowspan="@(stateContainer.aspectsList.FindAll(x => x.FunctionIDNr == fn.IDNr && x.Type == "Precondition").Count)">@Loc["PRECONDITION"]</td>
+                                    }
+                                    <td style=@pStyle>@aspect.IDName</td>
+                                </tr>
+                            }
+                            @if (firstPrecon)
+                            {
+                                firstPrecon = false;
+                                <tr>
+                                    <td style="width:20%;padding:0.25rem;vertical-align:top;border-top:thin solid lightgrey;border-right:thin solid lightgrey">@Loc["PRECONDITION"]</td>
+                                    <td style="width:80%;padding:0.25rem;border-top:thin solid lightgrey;border-right:thin solid lightgrey"></td>
+                                </tr>
+                            }
+                            @foreach (Aspect aspect in stateContainer.aspectsList.FindAll(x => x.FunctionIDNr == fn.IDNr && x.Type == "Resource"))
+                            {
+                                var rStyle = "width:80%;padding:0.25rem;border-top:thin solid lightgrey;border-right:thin solid lightgrey";
+                                if (aspect.Orphan == "true")
+                                {
+                                    rStyle += ";background-color:lightcoral";
+                                }
+                                <tr>
+                                    @if (firstResource)
+                                    {
+                                        firstResource = false;
+                                        <td style="width:20%;padding:0.25rem;vertical-align:top;border-top:thin solid lightgrey;border-right:thin solid lightgrey" rowspan="@(stateContainer.aspectsList.FindAll(x => x.FunctionIDNr == fn.IDNr && x.Type == "Resource").Count)">@Loc["RESOURCE"]</td>
+                                    }
+                                    <td style=@rStyle>@aspect.IDName</td>
+                                </tr>
+                            }
+                            @if (firstResource)
+                            {
+                                firstResource = false;
+                                <tr>
+                                    <td style="width:20%;padding:0.25rem;vertical-align:top;border-top:thin solid lightgrey;border-right:thin solid lightgrey">@Loc["RESOURCE"]</td>
+                                    <td style="width:80%;padding:0.25rem;border-top:thin solid lightgrey;border-right:thin solid lightgrey"></td>
+                                </tr>
+                            }
+                            @foreach (Aspect aspect in stateContainer.aspectsList.FindAll(x => x.FunctionIDNr == fn.IDNr && x.Type == "Control"))
+                            {
+                                var cStyle = "width:80%;padding:0.25rem;border-top:thin solid lightgrey;border-right:thin solid lightgrey";
+                                if (aspect.Orphan == "true")
+                                {
+                                    cStyle += ";background-color:lightcoral";
+                                }
+                                <tr>
+                                    @if (firstControl)
+                                    {
+                                        firstControl = false;
+                                        <td style="width:20%;padding:0.25rem;vertical-align:top;border-top:thin solid lightgrey;border-right:thin solid lightgrey" rowspan="@(stateContainer.aspectsList.FindAll(x => x.FunctionIDNr == fn.IDNr && x.Type == "Control").Count)">@Loc["CONTROL"]</td>
+                                    }
+                                    <td style=@cStyle>@aspect.IDName</td>
+                                </tr>
+                            }
+                            @if (firstControl)
+                            {
+                                firstControl = false;
+                                <tr>
+                                    <td style="width:20%;padding:0.25rem;vertical-align:top;border-top:thin solid lightgrey;border-right:thin solid lightgrey">@Loc["CONTROL"]</td>
+                                    <td style="width:80%;padding:0.25rem;border-top:thin solid lightgrey;border-right:thin solid lightgrey"></td>
+                                </tr>
+                            }
+                            @foreach (Aspect aspect in stateContainer.aspectsList.FindAll(x => x.FunctionIDNr == fn.IDNr && x.Type == "Time"))
+                            {
+                                var tStyle = "width:80%;padding:0.25rem;border-top:thin solid lightgrey;border-right:thin solid lightgrey";
+                                if (aspect.Orphan == "true")
+                                {
+                                    tStyle += ";background-color:lightcoral";
+                                }
+                                <tr>
+                                    @if (firstTime)
+                                    {
+                                        firstTime = false;
+                                        <td style="width:20%;padding:0.25rem;vertical-align:top;border-top:thin solid lightgrey;border-right:thin solid lightgrey" rowspan="@(stateContainer.aspectsList.FindAll(x => x.FunctionIDNr == fn.IDNr && x.Type == "Time").Count)">@Loc["TIME"]</td>
+                                    }
+                                    <td style=@tStyle>@aspect.IDName</td>
+                                </tr>
+                            }
+                            @if (firstTime)
+                            {
+                                firstTime = false;
+                                <tr>
+                                    <td style="width:20%;padding:0.25rem;vertical-align:top;border-top:thin solid lightgrey;border-right:thin solid lightgrey">@Loc["TIME"]</td>
+                                    <td style="width:80%;padding:0.25rem;border-top:thin solid lightgrey;border-right:thin solid lightgrey"></td>
+                                </tr>
+                            }
+                            <tr>
+                                <td style="width:20%;padding:0.25rem;border-top:thin solid lightgrey"></td>
+                                <td style="width:80%;padding:0.25rem;border-top:thin solid lightgrey"></td>
+                            </tr>
+                        </table><br>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback<bool> OnClose { get; set; }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            FocusElement("myModal");
+        }
+    }
+    private async void clickOut(MouseEventArgs e)
+    {
+        await OnClose.InvokeAsync(false);
+    }
+    private void clickNothing(MouseEventArgs e)
+    {
+    }
+    private async void checkforEsc(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            await OnClose.InvokeAsync(false);
+        }
+        else if (e.Key == "Enter")
+        {
+            await OnClose.InvokeAsync(false);
+        }
+    }
+    public async void FocusElement(string elementName)
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("focusInput", elementName);
+        }
+        catch
+        {
+        }
+    }
+    private async void printFMILog()
+    {
+        await JSRuntime.InvokeAsync<object>(
+        "FileSaveAs",
+        stateContainer.fileName.Replace(".xfmv","-text.html"),
+        await JSRuntime.InvokeAsync<string>("getHTML", "PDFtable")
+        );
+    }
+}

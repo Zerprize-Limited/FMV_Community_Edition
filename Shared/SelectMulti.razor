@@ -1,0 +1,77 @@
+﻿@inject StateContainer stateContainer
+@inject IConfiguration render
+
+<g @onmousemove="selectMove" @onmouseup="selectStop">
+    <rect fill="#555555" opacity="0" width="100%" height="100%" />
+    <rect rx="3" ry="3" stroke-width="2" stroke="@render[$"{stateContainer.newFnStyle}:selected-fill"]" stroke-opacity="0.75"
+          fill="@render[$"{stateContainer.newFnStyle}:selected-fill"]" fill-opacity="0.20"
+          x=@(stateContainer.selectX.ToString("0.##", CultureInfo.InvariantCulture)) y=@(stateContainer.selectY.ToString("0.##", CultureInfo.InvariantCulture))
+          width=@(stateContainer.selectWidth.ToString("0.##", CultureInfo.InvariantCulture)) height=@(stateContainer.selectHeight.ToString("0.##", CultureInfo.InvariantCulture)) />
+</g>
+
+@code {
+    [Parameter]
+    public EventCallback refreshParent { get; set; }
+
+    private void selectMove(MouseEventArgs e)
+    {
+        if (stateContainer.isSelecting)
+        {
+            var offsetX = e.OffsetX / stateContainer.scaleZoom;
+            var offsetY = e.OffsetY / stateContainer.scaleZoom;
+            var checkX = (offsetX - stateContainer.startX);
+            var checkY = (offsetY - stateContainer.startY);
+            if (checkX < 0)
+            {
+                stateContainer.selectX = stateContainer.startX + checkX;
+                checkX = -checkX;
+            }
+            if (checkY < 0)
+            {
+                stateContainer.selectY = stateContainer.startY + checkY;
+                checkY = -checkY;
+            }
+            stateContainer.selectWidth = checkX;
+            stateContainer.selectHeight = checkY;
+            if (offsetX + 120 > stateContainer.viewWidth)
+            {
+                stateContainer.viewWidth += 120;
+                stateContainer.canvasWidth = stateContainer.viewWidth * stateContainer.scaleZoom;
+                refreshParent.InvokeAsync();
+            }
+            if (offsetY + 120 > stateContainer.viewHeight)
+            {
+                stateContainer.viewHeight += 120;
+                stateContainer.canvasHeight = stateContainer.viewHeight * stateContainer.scaleZoom;
+                refreshParent.InvokeAsync();
+            }
+        }
+    }
+    private void selectStop(MouseEventArgs e)
+    {
+        stateContainer.beginMultiSelect();
+        refreshParent.InvokeAsync();
+
+        if (stateContainer.selectWidth > 100 && stateContainer.selectHeight > 100)
+        {
+            var stopX = e.OffsetX / stateContainer.scaleZoom - 100;
+            var stopY = e.OffsetY / stateContainer.scaleZoom - 100;
+            if (e.OffsetX / stateContainer.scaleZoom < stateContainer.startX)
+            {
+                stopX = stateContainer.startX - 100;
+                stateContainer.startX = e.OffsetX / stateContainer.scaleZoom;
+            }
+            if (e.OffsetY / stateContainer.scaleZoom < stateContainer.startY)
+            {
+                stopY = stateContainer.startY - 100;
+                stateContainer.startY = e.OffsetY / stateContainer.scaleZoom;
+            }
+            foreach (var function in stateContainer.functionList.FindAll(fn => fn.x > stateContainer.startX && fn.y > stateContainer.startY && fn.x < stopX && fn.y < stopY))
+            {
+                stateContainer.selectedMulti.Add(function.IDNr);
+            }
+        }
+        stateContainer.selectWidth = 0;
+        stateContainer.selectHeight = 0;
+    }
+}

@@ -1,0 +1,24 @@
+﻿/* The animation code */
+@keyframes highlight {
+    0% {
+        opacity: 0.5;
+        stroke-width: 5;
+    }
+    33% {
+        opacity: 0.3;
+        stroke-width: 3;
+    }
+    66% {
+        opacity: 0.7;
+        stroke-width: 7;
+    }
+    100% {
+        opacity: 0.5;
+        stroke-width: 5;
+    }
+}
+/* The element to apply the animation to */
+#fmi-highlight {
+    animation-name: highlight;
+    animation-duration: 0.5s;
+}

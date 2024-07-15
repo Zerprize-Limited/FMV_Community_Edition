@@ -1,5 +1,6 @@
 ﻿@inject StateContainer stateContainer
 @inject IJSRuntime JSRuntime
+@inject IStringLocalizer<Localization.SharedResource> Loc
 
 <div id="myModal" class="modal fade show" style="display:block" aria-modal="true" role="dialog" tabindex="100" @onkeydown=checkforEsc @onclick=clickOut>
     <div class="modal-dialog modal-dialog-centered modal-fmi" @onclick=clickNothing @onclick:stopPropagation>
@@ -7,7 +8,7 @@
             <div class="modal-header sticky-top bg-white p-0 pl-1 align-items-center">
                 FMI LOG
                 <div class="float-right">
-                    <button class="btn btn-menu oi oi-file" style="top:0" @onclick=printFMILog />
+                    <button class="btn btn-menu oi oi-file" style="top:0" title=@Loc["SAVE_TOOLTIP"] @onclick=printFMILog />
                     <button type="button" class="close m-0 pt-1 pb-1 pl-3 pr-3" @onclick="@(() => OnClose.InvokeAsync(false))">&times;</button>
                 </div>
             </div>
