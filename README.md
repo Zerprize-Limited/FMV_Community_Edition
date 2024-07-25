@@ -9,7 +9,7 @@ When a user creates an account and/or logs in to the application then further fu
 
 Projects forked from this base may explore extended functionality for qualitative and quantitative analyis, model interpretation, simulation and analytics.
 
-The application was developed as a Blazor WebAssembly App using Microsoft Visual Studio Community 2022, and published as a .NET 8.0 self-contained browser-wasm. If the repository was cloned to Visual Studio and published to a folder structure, the resulting web.config and wwwroot folder could be placed on a web server to run the application. This is exactly the case for the public version on https://fmv.zerprize.co.nz.
+The application was developed as a Blazor WebAssembly App using Microsoft Visual Studio Community 2022, and published as a .NET 8.0 self-contained browser-wasm. If the repository was cloned to Visual Studio and published to a folder structure, the resulting web.config and wwwroot folder could be placed on a web server to run the application. This is exactly the case for the public version on the website associated with this repository (the link is at the top right of the page): https://functionalresonance.github.io/FMV_Community_Edition/.
 
     FMV - FRAM Model Visualiser
     Copyright © 2021 ZERPRIZE LIMITED
