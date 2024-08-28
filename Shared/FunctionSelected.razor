@@ -64,6 +64,7 @@
     }
 }
 @foreach (var function in stateContainer.functionList.FindAll(x => stateContainer.selectedMulti.Contains(x.IDNr)))
+//This is for all of the selected Functions.
 {
     var displayFnText = function.ReturnTextLines(int.Parse(render[$"{function.fnStyle}:fn-font-wrap"]!));
     var fnTextCount = displayFnText.Count;
@@ -135,12 +136,12 @@
                 styleStroke = render[$"{function.options}fn-color-width"]!;
                 switch (function.fnColorStyle)
                 {
-                    case "blue": styleColor = "#01A6DB"; break;
-                    case "green": styleColor = "#17BD01"; break;
+                    case "blue": if (function.fnStyle == "2") { styleColor = "#9F9F9F"; } else { styleColor = "#01A6DB"; } break;
+                    case "green": if (function.fnStyle == "2") { styleColor = "#5F5F5F"; } else { styleColor = "#17BD01"; } break;
                     case "grey": styleColor = "#838383"; break;
-                    case "red": styleColor = "#E50000"; break;
-                    case "yellow": styleColor = "#BAB727"; break;
-                    case "purple": styleColor = "#9070C0"; break;
+                    case "red": if (function.fnStyle == "2") { styleColor = "#0F0F0F"; } else { styleColor = "#E50000"; } break;
+                    case "yellow": if (function.fnStyle == "2") { styleColor = "#DFDFDF"; } else { styleColor = "#BAB727"; } break;
+                    case "purple": if (function.fnStyle == "2") { styleColor = "#BFBFBF"; } else { styleColor = "#9070C0"; } break;
                     case "white": styleColor = "#FFFFFF"; break;
                     case "custom": 
                         {
@@ -158,6 +159,15 @@
                 }
                 if (styleColor != "#FFFFFF")
                 {
+                    if (function.fnStyle == "2")
+                    {
+                        //Luminosity = 0.21 R + 0.72 G + 0.07 B
+                        var R = Convert.ToInt32(styleColor.Substring(1, 2), 16);
+                        var G = Convert.ToInt32(styleColor.Substring(3, 2), 16);
+                        var B = Convert.ToInt32(styleColor.Substring(5, 2), 16);
+                        var L = Convert.ToInt32(0.21 * R + 0.72 * G + 0.07 * B);
+                        styleColor = $"#{L.ToString("X2")}{L.ToString("X2")}{L.ToString("X2")}";
+                    }
                     <g>
                         @if (!String.IsNullOrEmpty(render[$"{function.options}fn-color-path"]))
                         {
@@ -198,9 +208,9 @@
                 <circle cx=@render[$"{function.fnStyle}:aspectX:R"] cy=@render[$"{function.fnStyle}:aspectY:R"] r=@render[$"{function.options}aspect-r"] fill=@render[$"{function.options}aspect-fill"] />
             </g>
         }
-        @if (String.IsNullOrEmpty(render[$"{function.options}fn-path"])) //modern background
+        @if (!String.IsNullOrEmpty(render[$"{function.options}fn-alt-width"])) //modern background or alt aspect render
         {
-            if (!isFnColor)
+            if (!isFnColor || !String.IsNullOrEmpty(render[$"{function.options}fn-color-path"]))
             {
                 styleStroke = @render[$"{function.options}aspect-alt-stroke-width"]!;
                 styleColor = @render[$"{function.options}aspect-alt-stroke"]!;
@@ -212,11 +222,23 @@
             {
                 isIO = "I";
                 fontAdjustX = -1.8 + (6 - double.Parse(render[$"{function.options}aspect-font-size"]!, CultureInfo.InvariantCulture)) / 2;
+                if (!String.IsNullOrEmpty(render[$"{function.options}fn-alt-connector-path-I"]))
+                {
+                    <g stroke-width=@render[$"{function.options}fn-stroke-width"] stroke=@render[$"{function.options}fn-stroke"]>
+                        <path d=@render[$"{function.options}fn-alt-connector-path-I"] />
+                    </g>
+                }
             }
             else
             {
                 isIO = "O";
                 fontAdjustX = -3.1 + (6 - double.Parse(render[$"{function.options}aspect-font-size"]!, CultureInfo.InvariantCulture)) / 2;
+                if (!String.IsNullOrEmpty(render[$"{function.options}fn-alt-connector-path-O"]))
+                {
+                    <g stroke-width=@render[$"{function.options}fn-stroke-width"] stroke=@render[$"{function.options}fn-stroke"]>
+                        <path d=@render[$"{function.options}fn-alt-connector-path-O"] />
+                    </g>
+                }
             }
             <g stroke-width=@styleStroke stroke=@styleColor>
                 <circle cx=@render[$"{function.fnStyle}:aspectX:{isIO}"] cy=@render[$"{function.fnStyle}:aspectY:{isIO}"] r=@render[$"{function.options}aspect-r"] fill=@render[$"{function.options}aspect-alt-fill"] />
@@ -224,8 +246,11 @@
             <g font-size="@(render[$"{function.options}aspect-font-size"]+"pt")" font-family="'PT Sans Caption', sans-serif" fill=@render[$"{function.options}aspect-font-color"]>
                 <text x=@((double.Parse(render[$"{function.fnStyle}:aspectX:{isIO}"]!,CultureInfo.InvariantCulture)+fontAdjustX).ToString("0.##", CultureInfo.InvariantCulture)) y=@((double.Parse(render[$"{function.fnStyle}:aspectY:{isIO}"]!,CultureInfo.InvariantCulture)+fontAdjustY).ToString("0.##", CultureInfo.InvariantCulture))>@isIO</text>
             </g>
-            <rect x="@((50 - double.Parse(render[$"{function.options}fn-alt-width"]!, CultureInfo.InvariantCulture)/2.0).ToString("0.##", CultureInfo.InvariantCulture))" y="@((50 - fnTextCount * 5*stateContainer.tempZoomF - 5).ToString("0.##", CultureInfo.InvariantCulture))"
+            @if (render[$"{function.options}fn-alt-width"] != "0")
+            {
+                <rect x="@((50 - double.Parse(render[$"{function.options}fn-alt-width"]!, CultureInfo.InvariantCulture)/2.0).ToString("0.##", CultureInfo.InvariantCulture))" y="@((50 - fnTextCount * 5*stateContainer.tempZoomF - 5).ToString("0.##", CultureInfo.InvariantCulture))"
                     rx=@render[$"{function.options}fn-alt-r"] ry=@render[$"{function.options}fn-alt-r"] width=@render[$"{function.options}fn-alt-width"] height="@((9 + fnTextCount * 10*stateContainer.tempZoomF).ToString("0.##", CultureInfo.InvariantCulture))" fill=@render[$"{function.options}fn-alt-fill"] style="stroke:none;opacity:1" />
+            }
         }
         else 
         {
@@ -264,6 +289,7 @@
                 </text>
             </g>
         }
+        <!-- This is the display results of the metadata -->
         @if (function.toolTip.Length > 0)
         {
             <title>@function.toolTip</title>
