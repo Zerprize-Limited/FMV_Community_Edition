@@ -29,7 +29,7 @@
                                 <td style="width:80%;padding:0.25rem;border-top:thin solid lightgrey;border-right:thin solid lightgrey">@fn.IDName</td>
                             </tr>
                             <tr>
-                                <td style="width:20%;padding:0.25rem;;border-top:thin solid lightgrey;border-right:thin solid lightgrey">@Loc["DESCRIPTION"]</td>
+                                <td style="width:20%;padding:0.25rem;border-top:thin solid lightgrey;border-right:thin solid lightgrey">@Loc["DESCRIPTION"]</td>
                                 <td style="width:80%;padding:0.25rem;border-top:thin solid lightgrey;border-right:thin solid lightgrey">@fn.Description</td>
                             </tr>
                             <tr>
@@ -232,10 +232,16 @@
     }
     private async void printFMILog()
     {
+        var table = $"{await JSRuntime.InvokeAsync<string>("getHTML", "PDFtable")}\n";
+        var getCanvas = await JSRuntime.InvokeAsync<string>("getHTML", "canvas_1");
+        var rStart = getCanvas.IndexOf("width=");
+        var rEnd = getCanvas.IndexOf("xmlns=");
+        var outCanvas = getCanvas.Substring(0, rStart) + "width=100% " + getCanvas.Substring(rEnd);
+        Console.WriteLine(outCanvas);
         await JSRuntime.InvokeAsync<object>(
-        "FileSaveAs",
-        stateContainer.fileName.Replace(".xfmv","-text.html"),
-        await JSRuntime.InvokeAsync<string>("getHTML", "PDFtable")
+            "FileSaveAs",
+            stateContainer.fileName.Replace(".xfmv","-text.html"),
+            $"{table}{outCanvas}"
         );
     }
 }
