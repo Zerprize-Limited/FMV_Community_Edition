@@ -157,8 +157,11 @@ namespace FMV_Standard.Shared
                     string tempWord = doTWord;
                     while (tempWord.Length > 0)
                     {
-                        textLines.Add("");
-                        tL++;
+                        if (tL > 0 || tempWord.Length > length + 1) 
+                        {
+                            textLines.Add("");
+                            tL++;
+                        }
                         lL = length;
                         string addWord = tempWord.Substring(0, Math.Min(length + 1, tempWord.Length));
                         textLines[tL] += addWord;
