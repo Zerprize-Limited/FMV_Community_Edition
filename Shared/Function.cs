@@ -22,12 +22,12 @@ namespace FMV_Standard.Shared
             this.y = double.Parse(_y, CultureInfo.InvariantCulture);
             _fnStyle = fn.SelectSingleNode("@fnStyle")?.Value ?? "0";
             _FunctionType = fn.SelectSingleNode("FunctionType")?.InnerText ?? "2";
+            this.options = $"{_fnStyle}:{_FunctionType}:";
             this.IDName = fn.SelectSingleNode("IDName")?.InnerText ?? "";
             this.orphans = int.Parse(fn.SelectSingleNode("@orphans")?.Value ?? "0");
             this.isInput = fn.SelectSingleNode("@isInput")?.Value ?? "false";
             this.fnColorStyle = fn.SelectSingleNode("@style")?.Value ?? "";
             this.fnColorValue = fn.SelectSingleNode("@color")?.Value ?? "";
-            options = $"{fnStyle}:{FunctionType}:";
             this.profileFn = fn.SelectSingleNode("@profileFn")?.Value ?? "";
             this.profileI = fn.SelectSingleNode("@profileI")?.Value ?? "";
             this.profileP = fn.SelectSingleNode("@profileP")?.Value ?? "";

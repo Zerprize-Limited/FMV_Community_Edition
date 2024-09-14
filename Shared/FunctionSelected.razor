@@ -64,10 +64,12 @@
     }
 }
 @foreach (var function in stateContainer.functionList.FindAll(x => stateContainer.selectedMulti.Contains(x.IDNr)))
-//This is for all of the selected Functions.
+//This is for all of the selected Functions. This loops after the couplings are drawn so all selected functions are on top of all the couplings.
 {
     var displayFnText = function.ReturnTextLines(int.Parse(render[$"{function.fnStyle}:fn-font-wrap"]!));
     var fnTextCount = displayFnText.Count;
+    var aspectFontColor = render[$"{function.options}aspect-font-color"];
+    var fnFontColor = render[$"{function.options}fn-font-color"];
     <g class=@function.fnClass transform="translate(@function.x.ToString("0.##", CultureInfo.InvariantCulture),@function.y.ToString("0.##", CultureInfo.InvariantCulture))" @onmousedown="MoveFnStart" @ontouchstart="MoveFnStartTouch" @onmousemove="MoveFn" @ontouchmove="MoveFnTouch" @onmouseup="MoveFnStop" @ontouchend="MoveFnStopTouch">
         @if (function.fmiHighlight != "")
         { //this is the highlight if the function is highlighted by the FMI
@@ -84,41 +86,46 @@
         }
         @if (function.orphans > 0)
         {
+            var orphan_r = "7";
+            if (!String.IsNullOrEmpty(render[$"{function.fnStyle}:orphan-r"]))
+            {
+                orphan_r = render[$"{function.fnStyle}:orphan-r"];
+            }
             if (((function.orphans >> 0) & 1) == 1) //Input
             {
-                <circle stroke-width="5" stroke="#FF0000" fill="none" opacity="0.7" cx=@render[$"{function.fnStyle}:aspectX:I"] cy=@render[$"{function.fnStyle}:aspectY:I"] r="7" />
+                <circle stroke-width="5" stroke="#FF0000" fill="none" opacity="0.7" cx=@render[$"{function.fnStyle}:aspectX:I"] cy=@render[$"{function.fnStyle}:aspectY:I"] r=@orphan_r />
             }
             if (((function.orphans >> 1) & 1) == 1) //Output
             {
-                <circle stroke-width="5" stroke="#FF0000" fill="none" opacity="0.7" cx=@render[$"{function.fnStyle}:aspectX:O"] cy=@render[$"{function.fnStyle}:aspectY:O"] r="7" />
+                <circle stroke-width="5" stroke="#FF0000" fill="none" opacity="0.7" cx=@render[$"{function.fnStyle}:aspectX:O"] cy=@render[$"{function.fnStyle}:aspectY:O"] r=@orphan_r />
             }
             if (((function.orphans >> 2) & 1) == 1) //Precondition
             {
-                <circle stroke-width="5" stroke="#FF0000" fill="none" opacity="0.7" cx=@render[$"{function.fnStyle}:aspectX:P"] cy=@render[$"{function.fnStyle}:aspectY:P"] r="7" />
+                <circle stroke-width="5" stroke="#FF0000" fill="none" opacity="0.7" cx=@render[$"{function.fnStyle}:aspectX:P"] cy=@render[$"{function.fnStyle}:aspectY:P"] r=@orphan_r />
             }
             if (((function.orphans >> 3) & 1) == 1) //Resource
             {
-                <circle stroke-width="5" stroke="#FF0000" fill="none" opacity="0.7" cx=@render[$"{function.fnStyle}:aspectX:R"] cy=@render[$"{function.fnStyle}:aspectY:R"] r="7" />
+                <circle stroke-width="5" stroke="#FF0000" fill="none" opacity="0.7" cx=@render[$"{function.fnStyle}:aspectX:R"] cy=@render[$"{function.fnStyle}:aspectY:R"] r=@orphan_r />
             }
             if (((function.orphans >> 4) & 1) == 1) //Control
             {
-                <circle stroke-width="5" stroke="#FF0000" fill="none" opacity="0.7" cx=@render[$"{function.fnStyle}:aspectX:C"] cy=@render[$"{function.fnStyle}:aspectY:C"] r="7" />
+                <circle stroke-width="5" stroke="#FF0000" fill="none" opacity="0.7" cx=@render[$"{function.fnStyle}:aspectX:C"] cy=@render[$"{function.fnStyle}:aspectY:C"] r=@orphan_r />
             }
             if (((function.orphans >> 5) & 1) == 1) //Time
             {
-                <circle stroke-width="5" stroke="#FF0000" fill="none" opacity="0.7" cx=@render[$"{function.fnStyle}:aspectX:T"] cy=@render[$"{function.fnStyle}:aspectY:T"] r="7" />
+                <circle stroke-width="5" stroke="#FF0000" fill="none" opacity="0.7" cx=@render[$"{function.fnStyle}:aspectX:T"] cy=@render[$"{function.fnStyle}:aspectY:T"] r=@orphan_r />
             }
         }
-        <!-- This is the Function main outline -->
+        <!-- This is the Function main outline 
         <defs>
             <radialGradient id="fnVariable" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-                <stop offset="0%" style="stop-color:@render[$"{function.options}fn-stroke"];stop-opacity:0.25" />
-                <stop offset="80%" style="stop-color:@render[$"{function.options}fn-stroke"];stop-opacity:0.25" />
-                <stop offset="80%" style="stop-color:@render[$"{function.options}fn-stroke"];stop-opacity:1" />
-                <stop offset="100%" style="stop-color:@render[$"{function.options}fn-stroke"];stop-opacity:1" />
+                <stop offset="0%" style="stop-color:render[$"{function.options}fn-stroke"];stop-opacity:0.25" />
+                <stop offset="80%" style="stop-color:render[$"{function.options}fn-stroke"];stop-opacity:0.25" />
+                <stop offset="80%" style="stop-color:render[$"{function.options}fn-stroke"];stop-opacity:1" />
+                <stop offset="100%" style="stop-color:render[$"{function.options}fn-stroke"];stop-opacity:1" />
             </radialGradient>
-        </defs>
-        <g stroke-width=@render[$"{function.options}fn-stroke-width"] stroke="url(#fnVariable)">
+        </defs> -->
+        <g stroke-width=@render[$"{function.options}fn-stroke-width"] stroke=@render[$"{function.options}fn-stroke"]>
             @if (!String.IsNullOrEmpty(render[$"{function.options}fn-connector-path"]))
             {
                 <path d=@render[$"{function.options}fn-connector-path"] />
@@ -128,6 +135,12 @@
                 <path fill=@render[$"{function.options}fn-fill"] fill-opacity=@render[$"{function.options}fn-opacity"] d=@render[$"{function.options}fn-path"] />
             }
         </g>
+        @if (!String.IsNullOrEmpty(render[$"{function.options}fn-path-2"]))
+        {
+            <g stroke-width=@render[$"{function.options}fn-stroke-width"] stroke=@render[$"{function.options}fn-stroke"] stroke-opacity="0.25">
+                <path fill="none" d=@render[$"{function.options}fn-path-2"] />
+            </g>
+        }
         @if (function.fnColorStyle != null)
         {
             if (function.fnColorStyle.Length != 0)
@@ -177,7 +190,7 @@
                         }
                         @if (!String.IsNullOrEmpty(render[$"{function.options}fn-path"]))
                         {
-                            <g stroke-width=@render[$"{function.options}fn-stroke-width"] stroke="url(#fnVariable)">
+                            <g stroke-width=@render[$"{function.options}fn-stroke-width"] stroke=@render[$"{function.options}fn-stroke"]>
                                 <path fill="none" d=@render[$"{function.options}fn-path"] />
                             </g>
                         }
@@ -207,6 +220,28 @@
                 <circle cx=@render[$"{function.fnStyle}:aspectX:P"] cy=@render[$"{function.fnStyle}:aspectY:P"] r=@render[$"{function.options}aspect-r"] fill=@render[$"{function.options}aspect-fill"] />
                 <circle cx=@render[$"{function.fnStyle}:aspectX:R"] cy=@render[$"{function.fnStyle}:aspectY:R"] r=@render[$"{function.options}aspect-r"] fill=@render[$"{function.options}aspect-fill"] />
             </g>
+        }
+        @if (aspectFontColor == "auto" || fnFontColor == "auto")
+        {
+            var getColor = render[$"{function.options}fn-fill"]!;
+            if (isFnColor)
+            {
+                getColor = styleColor;
+            }
+            var R = Convert.ToInt32(getColor.Substring(1, 2), 16);
+            var G = Convert.ToInt32(getColor.Substring(3, 2), 16);
+            var B = Convert.ToInt32(getColor.Substring(5, 2), 16);
+            var L = Convert.ToInt32(0.21 * R + 0.72 * G + 0.07 * B);
+            var setColor = "#444444";
+            if (L < 178) { setColor = "#FFFFFF"; }
+            if (isFnColor && aspectFontColor == "auto" && render[$"{function.options}aspect-fill"] == "none")
+            {
+                aspectFontColor = setColor;
+            }
+            if (fnFontColor == "auto")
+            {
+                fnFontColor = setColor;
+            }
         }
         @if (!String.IsNullOrEmpty(render[$"{function.options}fn-alt-width"])) //modern background or alt aspect render
         {
@@ -240,11 +275,13 @@
                     </g>
                 }
             }
+            var aX_IO = (double.Parse(render[$"{function.fnStyle}:aspectX:{isIO}"]!, CultureInfo.InvariantCulture) + fontAdjustX).ToString("0.##", CultureInfo.InvariantCulture);
+            var aY_IO = (double.Parse(render[$"{function.fnStyle}:aspectY:{isIO}"]!, CultureInfo.InvariantCulture) + fontAdjustY).ToString("0.##", CultureInfo.InvariantCulture);
             <g stroke-width=@styleStroke stroke=@styleColor>
                 <circle cx=@render[$"{function.fnStyle}:aspectX:{isIO}"] cy=@render[$"{function.fnStyle}:aspectY:{isIO}"] r=@render[$"{function.options}aspect-r"] fill=@render[$"{function.options}aspect-alt-fill"] />
             </g>
-            <g font-size="@(render[$"{function.options}aspect-font-size"]+"pt")" font-family="'PT Sans Caption', sans-serif" fill=@render[$"{function.options}aspect-font-color"]>
-                <text x=@((double.Parse(render[$"{function.fnStyle}:aspectX:{isIO}"]!,CultureInfo.InvariantCulture)+fontAdjustX).ToString("0.##", CultureInfo.InvariantCulture)) y=@((double.Parse(render[$"{function.fnStyle}:aspectY:{isIO}"]!,CultureInfo.InvariantCulture)+fontAdjustY).ToString("0.##", CultureInfo.InvariantCulture))>@isIO</text>
+            <g font-size="@(render[$"{function.options}aspect-font-size"]+"pt")" font-family="'PT Sans Caption', sans-serif" fill=@aspectFontColor>
+                <text x=@aX_IO y=@aY_IO>@isIO</text>
             </g>
             @if (render[$"{function.options}fn-alt-width"] != "0")
             {
@@ -255,13 +292,25 @@
         else 
         {
             double fontAdjust = (6 - double.Parse(render[$"{function.options}aspect-font-size"]!, CultureInfo.InvariantCulture)) / 2;
-            <g font-size="@(render[$"{function.options}aspect-font-size"]+"pt")" font-family="'PT Sans Caption', sans-serif" fill=@render[$"{function.options}aspect-font-color"]>
-                <text x=@((double.Parse(render[$"{function.fnStyle}:aspectX:T"]!,CultureInfo.InvariantCulture)-2.6+fontAdjust).ToString("0.##", CultureInfo.InvariantCulture)) y=@((double.Parse(render[$"{function.fnStyle}:aspectY:T"]!,CultureInfo.InvariantCulture)+2.8-fontAdjust).ToString("0.##", CultureInfo.InvariantCulture))>T</text>
-                <text x=@((double.Parse(render[$"{function.fnStyle}:aspectX:C"]!,CultureInfo.InvariantCulture)-3.1+fontAdjust).ToString("0.##", CultureInfo.InvariantCulture)) y=@((double.Parse(render[$"{function.fnStyle}:aspectY:C"]!,CultureInfo.InvariantCulture)+2.8-fontAdjust).ToString("0.##", CultureInfo.InvariantCulture))>C</text>
-                <text x=@((double.Parse(render[$"{function.fnStyle}:aspectX:I"]!,CultureInfo.InvariantCulture)-1.8+fontAdjust).ToString("0.##", CultureInfo.InvariantCulture)) y=@((double.Parse(render[$"{function.fnStyle}:aspectY:I"]!,CultureInfo.InvariantCulture)+2.8-fontAdjust).ToString("0.##", CultureInfo.InvariantCulture))>I</text>
-                <text x=@((double.Parse(render[$"{function.fnStyle}:aspectX:O"]!,CultureInfo.InvariantCulture)-3.1+fontAdjust).ToString("0.##", CultureInfo.InvariantCulture)) y=@((double.Parse(render[$"{function.fnStyle}:aspectY:O"]!,CultureInfo.InvariantCulture)+2.8-fontAdjust).ToString("0.##", CultureInfo.InvariantCulture))>O</text>
-                <text x=@((double.Parse(render[$"{function.fnStyle}:aspectX:P"]!,CultureInfo.InvariantCulture)-2.4+fontAdjust).ToString("0.##", CultureInfo.InvariantCulture)) y=@((double.Parse(render[$"{function.fnStyle}:aspectY:P"]!,CultureInfo.InvariantCulture)+2.8-fontAdjust).ToString("0.##", CultureInfo.InvariantCulture))>P</text>
-                <text x=@((double.Parse(render[$"{function.fnStyle}:aspectX:R"]!,CultureInfo.InvariantCulture)-2.7+fontAdjust).ToString("0.##", CultureInfo.InvariantCulture)) y=@((double.Parse(render[$"{function.fnStyle}:aspectY:R"]!,CultureInfo.InvariantCulture)+2.8-fontAdjust).ToString("0.##", CultureInfo.InvariantCulture))>R</text>
+            var aX_T = (double.Parse(render[$"{function.fnStyle}:aspectX:T"]!, CultureInfo.InvariantCulture) - 2.6 + fontAdjust).ToString("0.##", CultureInfo.InvariantCulture);
+            var aY_T = (double.Parse(render[$"{function.fnStyle}:aspectY:T"]!, CultureInfo.InvariantCulture) + 2.8 - fontAdjust).ToString("0.##", CultureInfo.InvariantCulture);
+            var aX_C = (double.Parse(render[$"{function.fnStyle}:aspectX:C"]!, CultureInfo.InvariantCulture) - 3.1 + fontAdjust).ToString("0.##", CultureInfo.InvariantCulture);
+            var aY_C = (double.Parse(render[$"{function.fnStyle}:aspectY:C"]!, CultureInfo.InvariantCulture) + 2.8 - fontAdjust).ToString("0.##", CultureInfo.InvariantCulture);
+            var aX_I = (double.Parse(render[$"{function.fnStyle}:aspectX:I"]!, CultureInfo.InvariantCulture) - 1.8 + fontAdjust).ToString("0.##", CultureInfo.InvariantCulture);
+            var aY_I = (double.Parse(render[$"{function.fnStyle}:aspectY:I"]!, CultureInfo.InvariantCulture) + 2.8 - fontAdjust).ToString("0.##", CultureInfo.InvariantCulture);
+            var aX_O = (double.Parse(render[$"{function.fnStyle}:aspectX:O"]!, CultureInfo.InvariantCulture) - 3.1 + fontAdjust).ToString("0.##", CultureInfo.InvariantCulture);
+            var aY_O = (double.Parse(render[$"{function.fnStyle}:aspectY:O"]!, CultureInfo.InvariantCulture) + 2.8 - fontAdjust).ToString("0.##", CultureInfo.InvariantCulture);
+            var aX_P = (double.Parse(render[$"{function.fnStyle}:aspectX:P"]!, CultureInfo.InvariantCulture) - 2.4 + fontAdjust).ToString("0.##", CultureInfo.InvariantCulture);
+            var aY_P = (double.Parse(render[$"{function.fnStyle}:aspectY:P"]!, CultureInfo.InvariantCulture) + 2.8 - fontAdjust).ToString("0.##", CultureInfo.InvariantCulture);
+            var aX_R = (double.Parse(render[$"{function.fnStyle}:aspectX:R"]!, CultureInfo.InvariantCulture) - 2.7 + fontAdjust).ToString("0.##", CultureInfo.InvariantCulture);
+            var aY_R = (double.Parse(render[$"{function.fnStyle}:aspectY:R"]!, CultureInfo.InvariantCulture) + 2.8 - fontAdjust).ToString("0.##", CultureInfo.InvariantCulture);
+            <g font-size="@(render[$"{function.options}aspect-font-size"]+"pt")" font-family="'PT Sans Caption', sans-serif" fill=@aspectFontColor>
+                <text x=@aX_T y=@aY_T>T</text>
+                <text x=@aX_C y=@aY_C>C</text>
+                <text x=@aX_I y=@aY_I>I</text>
+                <text x=@aX_O y=@aY_O>O</text>
+                <text x=@aX_P y=@aY_P>P</text>
+                <text x=@aX_R y=@aY_R>R</text>
             </g>
         }
         <!-- This is the Function text -->
@@ -269,7 +318,7 @@
         {
             <a href=@(function.metadata.Find(x => x[0] == "Hyperlink")![1]) target="_blank">
                 <text transform="scale(@stateContainer.tempZoomF.ToString("0.##", CultureInfo.InvariantCulture))" x="@((50 / stateContainer.tempZoomF).ToString("0.##", CultureInfo.InvariantCulture))" y="@((50 / stateContainer.tempZoomF - fnTextCount * 5 - 2).ToString("0.##", CultureInfo.InvariantCulture))"
-                      font-size="6pt" text-anchor="middle" width="60" height="40" font-family="'PT Sans Caption', sans-serif" fill=@render[$"{function.options}fn-font-color"]>
+                      font-size="6pt" text-anchor="middle" width="60" height="40" font-family="'PT Sans Caption', sans-serif" fill=@fnFontColor]>
                     @for (int i = 0; i < fnTextCount; i++)
                     {
                         <tspan x="@((50 / stateContainer.tempZoomF).ToString("0.##", CultureInfo.InvariantCulture))" dy="10">@displayFnText[i]</tspan>
@@ -281,7 +330,7 @@
         {
             <g>
                 <text transform="scale(@stateContainer.tempZoomF.ToString("0.##", CultureInfo.InvariantCulture))" x="@((50 / stateContainer.tempZoomF).ToString("0.##", CultureInfo.InvariantCulture))" y="@((50 / stateContainer.tempZoomF - fnTextCount * 5 - 2).ToString("0.##", CultureInfo.InvariantCulture))"
-                      font-size="6pt" text-anchor="middle" width="60" height="40" font-family="'PT Sans Caption', sans-serif" fill=@render[$"{function.options}fn-font-color"]>
+                      font-size="6pt" text-anchor="middle" width="60" height="40" font-family="'PT Sans Caption', sans-serif" fill=@fnFontColor>
                     @for (int i = 0; i < fnTextCount; i++)
                     {
                         <tspan x="@((50 / stateContainer.tempZoomF).ToString("0.##", CultureInfo.InvariantCulture))" dy="10">@displayFnText[i]</tspan>
@@ -323,7 +372,7 @@
                     @if (function.Kvalues.ContainsKey($"K{i}"))
                     {
                         <g>
-                            <text x=@textX y=@textY font-size="5pt" text-anchor="middle" width="60" height="40" font-family="'PT Sans Caption', sans-serif" fill=@render[$"{function.options}fn-font-color"]>
+                            <text x=@textX y=@textY font-size="5pt" text-anchor="middle" width="60" height="40" font-family="'PT Sans Caption', sans-serif" fill=@fnFontColor>
                                 <tspan>@function.Kvalues[$"K{i}"].ToString()</tspan>
                             </text>
                         </g>
