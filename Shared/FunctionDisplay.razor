@@ -133,6 +133,12 @@
                             </g>
                         }
                     </g>
+                    @if (!String.IsNullOrEmpty(render[$"{function.options}fn-path-2"]))
+                    {
+                        <g stroke-width=@render[$"{function.options}fn-stroke-width"] stroke=@render[$"{function.options}fn-stroke"] stroke-opacity="0.25">
+                            <path fill="none" d=@render[$"{function.options}fn-path-2"] />
+                        </g>
+                    }
                 }
                 else
                 {
