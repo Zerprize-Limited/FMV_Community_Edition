@@ -159,13 +159,13 @@ a, .btn-link {
 }
 .btn-desc {
     color: darkgrey;
-    zoom: 0.75;
+    transform: scale(0.75);
     background-color: #F1F3F4;
     border-color: #F1F3F4;
-    min-width: 4rem;
+    min-width: 3rem;
     max-width: 4rem;
-    min-height: 2.5rem;
-    max-height: 2.5rem;
+    min-height: 2rem;
+    max-height: 2.7rem;
 }
     .btn-desc:hover {
         color: dimgrey;
