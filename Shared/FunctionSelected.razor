@@ -434,7 +434,7 @@
     }
     private void MoveFnStart(MouseEventArgs e, string IDNr)
     {
-        if (e.CtrlKey)
+        if ((e.CtrlKey || e.MetaKey))
         {
             unselectMulti = IDNr;
         }

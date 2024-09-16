@@ -344,7 +344,7 @@
     }
     private void SelectFn(MouseEventArgs e, string IDNr, string IDName)
     {
-        if (e.CtrlKey && stateContainer.selectedMulti.Count > 0)
+        if ((e.CtrlKey || e.MetaKey) && stateContainer.selectedMulti.Count > 0)
         {
             if (stateContainer.selectedFn != "-1")
             {
