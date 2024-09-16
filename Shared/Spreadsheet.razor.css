@@ -55,20 +55,25 @@
 ::deep tr:nth-child(even) {
     background: rgb(180, 200, 226, 0.40);
 }*/
-    ::deep tr:has(.select-row) {
-        background: rgb(255, 216, 0, 0.5);
+    ::deep tr:has(.selected-fill) {
+        /*background: rgb(255, 216, 0, 0.5);*/
+        background: var(--selected-fill);
     }
     ::deep tr:has(.entry-fill) {
-        background: rgb(42, 155, 0, 0.5);
+        /*background: rgb(42, 155, 0, 0.5);*/
+        background: var(--entry-fill);
     }
     ::deep tr:has(.exit-fill) {
-        background: rgb(255, 17, 0, 0.5);
+        /*background: rgb(255, 17, 0, 0.5);*/
+        background: var(--exit-fill);
     }
     ::deep tr:has(.background-fill) {
-        background: rgb(126, 157, 188, 0.5);
+        /*background: rgb(126, 157, 188, 0.5);*/
+        background: var(--background-fill);
     }
     ::deep tr:has(.hold-fill) {
-        background: rgb(191, 191, 0, 0.5);
+        /*background: rgb(191, 191, 0, 0.5);*/
+        background: var(--hold-fill);
     }
 /* Magnifying glass */
 ::deep .search .col-options-button {

@@ -658,10 +658,6 @@
         {
             stateContainer.defaultFnLabel();
         }
-        if (stateContainer.selectedFunction is not null)
-        {
-            stateContainer.selectedFunction.fnClass = "fn-point";
-        }
         if (stateContainer.selectedCoupling is not null)
         {
             stateContainer.selectedCoupling.aspectClass = "fn-point";
@@ -686,10 +682,6 @@
             if (stateContainer.selectedFn != "-1" && stateContainer.selectedFunction?.IDName == "")
             {
                 stateContainer.defaultFnLabel();
-            }
-            if (stateContainer.selectedFunction is not null)
-            {
-                stateContainer.selectedFunction.dragFn = false;
             }
             if (stateContainer.selectedCoupling is not null)
             {

@@ -78,7 +78,6 @@ namespace FMV_Standard.Shared
         public Dictionary<string, string> Cvalues { get; set; } = new Dictionary<string, string>();
         public string toolTip { get; set; } = "";
         public bool dragFn { get; set; } = false;
-        public string fnClass { get; set; } = "fn-point";
         public string fnStyle
         {
             get { return _fnStyle; }

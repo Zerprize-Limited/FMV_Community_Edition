@@ -8,19 +8,10 @@
     var fnTextCount = displayFnText.Count;
     var aspectFontColor = render[$"{function.options}aspect-font-color"];
     var fnFontColor = render[$"{function.options}fn-font-color"];
-    <g class=@function.fnClass transform="translate(@function.x.ToString("0.##", CultureInfo.InvariantCulture),@function.y.ToString("0.##", CultureInfo.InvariantCulture))" @onclick=@((e) => SelectFn(e, function.IDNr, function.IDName))>
+    <g class="fn-point" transform="translate(@function.x.ToString("0.##", CultureInfo.InvariantCulture),@function.y.ToString("0.##", CultureInfo.InvariantCulture))" @onclick=@((e) => SelectFn(e, function.IDNr, function.IDName))>
         @if (function.fmiHighlight != "")
         { //this is the highlight if the function is highlighted by the FMI
             <circle id="fmi-highlight" style=@highlightSpeed() cx="50" cy="50" r=@render[$"{function.fnStyle}:highlight-r"] fill=@($"url(#{function.fmiHighlight})") opacity="0.75" />
-        }
-        @if (stateContainer.selectedMulti.Contains(function.IDNr))
-        {
-            if (function.dragFn)
-            { //this increases the size of the function during dragging so we don't lose the mouse pointer
-                <circle cx="50" cy="50" fill="white" opacity="0" r="100%" />
-            }
-            //this is the highlight if the function is selected
-            <circle cx="50" cy="50" r=@render[$"{function.fnStyle}:highlight-r"] fill="url(#selected-fill)" />
         }
         @if (function.orphans > 0)
         {
@@ -353,7 +344,19 @@
     }
     private void SelectFn(MouseEventArgs e, string IDNr, string IDName)
     {
-        //if (function != null)
+        if (e.CtrlKey && stateContainer.selectedMulti.Count > 0)
+        {
+            if (stateContainer.selectedFn != "-1")
+            {
+                var firstSelected = stateContainer.selectedFn;
+                stateContainer.selectedFn = "-1";
+                stateContainer.touchAction = "auto";
+                stateContainer.selectedMulti.Add(firstSelected);
+            }
+            stateContainer.selectedMulti.Add(IDNr);
+            refreshParent.InvokeAsync();
+        } 
+        else 
         {
             if (!stateContainer.selectedMulti.Contains(IDNr))
             {
@@ -361,26 +364,7 @@
                 {
                     stateContainer.selectedCoupling.aspectClass = "fn-point";
                 }
-                if (stateContainer.selectedFunction is not null)
-                {
-                    stateContainer.selectedFunction.fnClass = "fn-point";
-                }
                 stateContainer.selectedLabel = "";
-                if (stateContainer.selectedMulti.Count > 1)
-                {
-                    foreach (var fnIDNr in stateContainer.selectedMulti)
-                    {
-                        if (fnIDNr != IDNr)
-                        {
-                            var fn = stateContainer.functionList.Find(x => x.IDNr == fnIDNr);
-                            if (fn is not null)
-                            {
-                                fn.dragFn = false;
-                                fn.fnClass = "fn-point";
-                            }
-                        }
-                    }
-                }
                 stateContainer.selectedFn = IDNr;
                 stateContainer.fnName = IDName;
                 stateContainer.isDisabled = false;

@@ -23,6 +23,7 @@ namespace FMV_Standard.Shared
         public DataSet metadataDS = new DataSet();
         public Dictionary<string, string> metaDataKeys = new Dictionary<string, string>();
         public bool metaIsDirty = false;
+        public string fnClass { get; set; } = "fn-hover";
         public string selectedFn
         {
             get
@@ -33,7 +34,6 @@ namespace FMV_Standard.Shared
             {
                 if (selectedFunction is not null)
                 {
-                    selectedFunction.fnClass = "fn-point";
                     if (metaIsDirty)
                     {
                         var fnMD = projectData_Undo[0].SelectSingleNode($"//FM/Functions/Function[IDNr={_selectedFn}]/metadata");
@@ -57,6 +57,17 @@ namespace FMV_Standard.Shared
                     }
                 }
                 _selectedFn = value;
+                if (selectedMulti.Count > 0)
+                {
+                    foreach (var fnIDNr in selectedMulti)
+                    {
+                        var fn = functionList.Find(x => x.IDNr == fnIDNr);
+                        if (fn is not null)
+                        {
+                            fn.dragFn = false;
+                        }
+                    }
+                }
                 selectedMulti = new List<string>();
                 if (functionList is not null)
                 {
@@ -68,7 +79,6 @@ namespace FMV_Standard.Shared
                 }
                 if (_selectedFn != "-1" && selectedFunction is not null)
                 {
-                    selectedFunction.fnClass = "fn-hover";
                     selectedMulti.Add(value);
                 }
                 else
@@ -441,25 +451,9 @@ namespace FMV_Standard.Shared
         public void beginMultiSelect()
         {
             isSelecting = false;
-            if (selectedMulti.Count > 0)
-            {
-                foreach (var fnIDNr in selectedMulti)
-                {
-                    var fn = functionList.Find(x => x.IDNr == fnIDNr);
-                    if (fn is not null)
-                    {
-                        fn.dragFn = false;
-                        fn.fnClass = "fn-point";
-                    }
-                }
-            }
             if (_selectedFn != "-1" && selectedFunction?.IDName == "")
             {
                 defaultFnLabel();
-            }
-            if (selectedFunction is not null)
-            {
-                selectedFunction.fnClass = "fn-point";
             }
             if (selectedCoupling is not null)
             {

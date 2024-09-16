@@ -70,7 +70,7 @@
     var fnTextCount = displayFnText.Count;
     var aspectFontColor = render[$"{function.options}aspect-font-color"];
     var fnFontColor = render[$"{function.options}fn-font-color"];
-    <g class=@function.fnClass transform="translate(@function.x.ToString("0.##", CultureInfo.InvariantCulture),@function.y.ToString("0.##", CultureInfo.InvariantCulture))" @onmousedown="MoveFnStart" @ontouchstart="MoveFnStartTouch" @onmousemove="MoveFn" @ontouchmove="MoveFnTouch" @onmouseup="MoveFnStop" @ontouchend="MoveFnStopTouch">
+    <g class=@stateContainer.fnClass transform="translate(@function.x.ToString("0.##", CultureInfo.InvariantCulture),@function.y.ToString("0.##", CultureInfo.InvariantCulture))" @onmousedown=@((e) => MoveFnStart(e, function.IDNr)) @ontouchstart="MoveFnStartTouch" @onmousemove="MoveFn" @ontouchmove="MoveFnTouch" @onmouseup="MoveFnStop" @ontouchend="MoveFnStopTouch">
         @if (function.fmiHighlight != "")
         { //this is the highlight if the function is highlighted by the FMI
             <circle id="fmi-highlight" style=@highlightSpeed() cx="50" cy="50" r=@render[$"{function.fnStyle}:highlight-r"] fill=@($"url(#{function.fmiHighlight})") opacity="0.75" />
@@ -393,6 +393,7 @@
     private string styleStroke = "1";
     private string styleColor = "#999999";
     private bool isFnColor = false;
+    private string unselectMulti = "";
 
     [Parameter]
     public EventCallback refreshParent { get; set; }
@@ -419,6 +420,8 @@
         {
             stateContainer.defaultFnLabel();
         }
+        stateContainer.fnClass = "fn-move";
+        stateContainer.touchAction = "none";
         foreach (var function in stateContainer.functionList.FindAll(x => stateContainer.selectedMulti.Contains(x.IDNr)))
         {
             if (function is not null)
@@ -426,25 +429,30 @@
                 function.startX = e.Touches[0].ClientX / stateContainer.scaleZoom - function.x;
                 function.startY = e.Touches[0].ClientY / stateContainer.scaleZoom - function.y;
                 function.dragFn = true;
-                function.fnClass = "fn-move";
-                stateContainer.touchAction = "none";
             }
         }
     }
-    private void MoveFnStart(MouseEventArgs e)
+    private void MoveFnStart(MouseEventArgs e, string IDNr)
     {
-        if (stateContainer.selectedFn != "-1" && stateContainer.selectedFunction?.IDName == "")
+        if (e.CtrlKey)
         {
-            stateContainer.defaultFnLabel();
+            unselectMulti = IDNr;
         }
-        foreach (var function in stateContainer.functionList.FindAll(x => stateContainer.selectedMulti.Contains(x.IDNr)))
+        else
         {
-            if (function is not null)
+            if (stateContainer.selectedFn != "-1" && stateContainer.selectedFunction?.IDName == "")
             {
-                function.startX = e.ClientX / stateContainer.scaleZoom - function.x;
-                function.startY = e.ClientY / stateContainer.scaleZoom - function.y;
-                function.dragFn = true;
-                function.fnClass = "fn-move";
+                stateContainer.defaultFnLabel();
+            }
+            stateContainer.fnClass = "fn-move";
+            foreach (var function in stateContainer.functionList.FindAll(x => stateContainer.selectedMulti.Contains(x.IDNr)))
+            {
+                if (function is not null)
+                {
+                    function.startX = e.ClientX / stateContainer.scaleZoom - function.x;
+                    function.startY = e.ClientY / stateContainer.scaleZoom - function.y;
+                    function.dragFn = true;
+                }
             }
         }
     }
@@ -510,14 +518,29 @@
                     }
                 }
                 function.dragFn = false;
-                function.fnClass = "fn-hover";
                 stateContainer.updateFnXY(function.x, function.y, function.IDNr);
-                stateContainer.touchAction = "auto";
             }
         }
+        stateContainer.fnClass = "fn-hover";
+        stateContainer.touchAction = "auto";
     }
     private void MoveFnStop(MouseEventArgs e)
     {
+        if (unselectMulti != "")
+        {
+            if (stateContainer.selectedMulti.Count > 1)
+            {
+                stateContainer.selectedMulti.Remove(unselectMulti);
+                if (stateContainer.selectedMulti.Count == 1)
+                {
+                    stateContainer.selectedFn = stateContainer.selectedMulti[0];
+                    stateContainer.fnName = stateContainer.functionList.Find(x => x.IDNr == stateContainer.selectedFn)?.IDName ?? "";
+                    stateContainer.isDisabled = false;
+                }
+                refreshParent.InvokeAsync();
+            }
+            unselectMulti = "";
+        } 
         stateContainer.updateUndo();
         foreach (var function in stateContainer.functionList.FindAll(x => stateContainer.selectedMulti.Contains(x.IDNr)))
         {
@@ -532,9 +555,9 @@
                     }
                 }
                 function.dragFn = false;
-                function.fnClass = "fn-hover";
                 stateContainer.updateFnXY(function.x, function.y, function.IDNr);
             }
         }
+        stateContainer.fnClass = "fn-hover";
     }
 }

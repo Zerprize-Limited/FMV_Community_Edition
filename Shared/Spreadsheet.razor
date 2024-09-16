@@ -2,7 +2,15 @@
 @inject IJSRuntime JSRuntime
 @inject IConfiguration render
 @inject IStringLocalizer<Localization.SharedResource> Loc
-
+<style>
+    :root {
+        --selected-fill: @($"{render[$"{stateContainer.newFnStyle}:selected-fill"]}80");
+        --entry-fill: @($"{render[$"{stateContainer.newFnStyle}:entry-fill"]}80");
+        --exit-fill: @($"{render[$"{stateContainer.newFnStyle}:exit-fill"]}80");
+        --background-fill: @($"{render[$"{stateContainer.newFnStyle}:background-fill"]}80");
+        --hold-fill: @($"{render[$"{stateContainer.newFnStyle}:hold-fill"]}80");
+    }
+</style>
 <div>
     <div class="d-inline-flex align-items-center mb-2">
         @Loc["S_SHOW"]:
@@ -14,7 +22,7 @@
     </div>
     <QuickGrid @ref="thisGrid" Items=@FilteredFunctions Theme="fmv">
         <TemplateColumn Title="IDNr" SortBy="@sortByIDNr" Align="Align.End" IsDefaultSortColumn="true" >
-            <a class="@SelectRow(context.IDNr, context.fmiHighlight)" @onclick=@((e) => selectGrid(context.IDNr, context.IDName))>@context.IDNr</a>
+            <a class="@SelectRow(context.IDNr, context.fmiHighlight)" @onclick=@((e) => selectGrid(e, context.IDNr, context.IDName))>@context.IDNr</a>
         </TemplateColumn>
         <TemplateColumn Title="IDName" Class=@($"search fn-idname{ShowNameFiltered()}") SortBy="@sortByIDName">
             <ColumnOptions>
@@ -23,12 +31,14 @@
                 </div>
             </ColumnOptions>
             <ChildContent>
-                <a @onclick=@((e) => selectGrid(context.IDNr, context.IDName))>@context.IDName</a>
+                <a @onclick=@((e) => selectGrid(e, context.IDNr, context.IDName))>@context.IDName</a>
             </ChildContent>
         </TemplateColumn>
         @if (stateContainer.showProperties)
         {
-            <PropertyColumn Title="FunctionType" Class="show-properties" Property="@(fn => render[$"{stateContainer.newFnStyle}:{fn.FunctionType}:Name"])" Sortable="true" />
+            <TemplateColumn Title="FunctionType" Class="show-properties" SortBy="@sortByFunctionType">
+                <a @onclick=@((e) => selectFunctionType(context.FunctionType))>@render[$"{stateContainer.newFnStyle}:{context.FunctionType}:Name"]</a>
+            </TemplateColumn>
             <TemplateColumn Title=@Loc["COLOUR"] Class="show-properties" SortBy="@sortByColour">
                 <input type="color" value=@returnColor(context.fnColorValue, false) @onclick=@((e) => selectColour(context.fnColorValue)) @onclick:preventDefault />
             </TemplateColumn>
@@ -120,6 +130,9 @@
     GridSort<Function> sortByIDName = GridSort<Function>
         .ByAscending(fn => fn.IDName);
 
+    GridSort<Function> sortByFunctionType = GridSort<Function>
+        .ByAscending(fn => fn.FunctionType);
+
     IQueryable<Function> FilteredFunctions
     {
         get
@@ -163,9 +176,9 @@
     }
     private string SelectRow(string IDNr, string Highlight)
     {
-        if (stateContainer.selectedFn == IDNr)
+        if (stateContainer.selectedMulti.Contains(IDNr))
         {
-            return "select-row";
+            return "selected-fill";
         }
         else
         {
@@ -176,20 +189,42 @@
     {
         return@<textarea></textarea>;
     }
-    private async void selectGrid(string IDNr, string label)
+    private async void selectGrid(MouseEventArgs e, string IDNr, string label)
     {
         if (IDNr is not null)
         {
-            if (stateContainer.selectedFunction is not null)
-            {
-                stateContainer.selectedFunction.fnClass = "fn-point";
-            }
             if (IDNr != stateContainer.selectedFn)
             {
-                stateContainer.selectedLabel = "";
-                stateContainer.selectedFn = IDNr;
-                stateContainer.fnName = label;
-                stateContainer.isDisabled = false;
+                if (e.CtrlKey && stateContainer.selectedMulti.Count > 0)
+                {
+                    if (stateContainer.selectedFn != "-1")
+                    {
+                        var firstSelected = stateContainer.selectedFn;
+                        stateContainer.selectedFn = "-1";
+                        stateContainer.selectedMulti.Add(firstSelected);
+                    }
+                    if (stateContainer.selectedMulti.Contains(IDNr))
+                    {
+                        stateContainer.selectedMulti.Remove(IDNr);
+                        if (stateContainer.selectedMulti.Count == 1)
+                        {
+                            stateContainer.selectedFn = stateContainer.selectedMulti[0];
+                            stateContainer.fnName = stateContainer.functionList.Find(x => x.IDNr == stateContainer.selectedFn)?.IDName??"" ;
+                            stateContainer.isDisabled = false;
+                        }
+                    } 
+                    else
+                    {
+                        stateContainer.selectedMulti.Add(IDNr);
+                    }
+                } 
+                else
+                {
+                    stateContainer.selectedLabel = "";
+                    stateContainer.selectedFn = IDNr;
+                    stateContainer.fnName = label;
+                    stateContainer.isDisabled = false;
+                }
                 await refreshParent.InvokeAsync();
                 await JSRuntime.InvokeVoidAsync("focusInput", "mainWindow");
             }
@@ -199,6 +234,15 @@
     {
         stateContainer.beginMultiSelect();
         foreach (var function in stateContainer.functionList.FindAll(fn => fn.fnColorValue == colour))
+        {
+            stateContainer.selectedMulti.Add(function.IDNr);
+        }
+        refreshParent.InvokeAsync();
+    }
+    private void selectFunctionType(string functionType)
+    {
+        stateContainer.beginMultiSelect();
+        foreach (var function in stateContainer.functionList.FindAll(fn => fn.FunctionType == functionType))
         {
             stateContainer.selectedMulti.Add(function.IDNr);
         }
