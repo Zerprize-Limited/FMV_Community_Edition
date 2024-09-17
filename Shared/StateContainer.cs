@@ -304,16 +304,6 @@ namespace FMV_Standard.Shared
         {
             updateUndo();
             var setStyle = "custom";
-            if (projectData_Undo[0].SelectSingleNode($"//FM/Functions/Function[IDNr={_selectedFn}]/@style") == null)
-            {
-                XmlAttribute fnColorStyle = projectData_Undo[0].CreateAttribute("style");
-                projectData_Undo[0].SelectSingleNode($"//FM/Functions/Function[IDNr={_selectedFn}]")!.Attributes!.Append(fnColorStyle);
-            }
-            if (projectData_Undo[0].SelectSingleNode($"//FM/Functions/Function[IDNr={_selectedFn}]/@color") == null)
-            {
-                XmlAttribute fnColorValue = projectData_Undo[0].CreateAttribute("color");
-                projectData_Undo[0].SelectSingleNode($"//FM/Functions/Function[IDNr={_selectedFn}]")!.Attributes!.Append(fnColorValue);
-            }
             if (selectedColor == "")
             {
                 setStyle = "";
@@ -322,10 +312,24 @@ namespace FMV_Standard.Shared
             {
                 selectedColor = uint.Parse(selectedColor.Replace("#", ""), NumberStyles.HexNumber).ToString();
             }
-            projectData_Undo[0].SelectSingleNode($"//FM/Functions/Function[IDNr={_selectedFn}]/@style")!.InnerText = setStyle;
-            selectedFunction!.fnColorStyle = setStyle;
-            projectData_Undo[0].SelectSingleNode($"//FM/Functions/Function[IDNr={_selectedFn}]/@color")!.InnerText = selectedColor;
-            selectedFunction!.fnColorValue = selectedColor;
+            foreach (var ID in selectedMulti)
+            {
+                if (projectData_Undo[0].SelectSingleNode($"//FM/Functions/Function[IDNr={ID}]/@style") == null)
+                {
+                    XmlAttribute fnColorStyle = projectData_Undo[0].CreateAttribute("style");
+                    projectData_Undo[0].SelectSingleNode($"//FM/Functions/Function[IDNr={ID}]")!.Attributes!.Append(fnColorStyle);
+                }
+                if (projectData_Undo[0].SelectSingleNode($"//FM/Functions/Function[IDNr={ID}]/@color") == null)
+                {
+                    XmlAttribute fnColorValue = projectData_Undo[0].CreateAttribute("color");
+                    projectData_Undo[0].SelectSingleNode($"//FM/Functions/Function[IDNr={ID}]")!.Attributes!.Append(fnColorValue);
+                }
+                projectData_Undo[0].SelectSingleNode($"//FM/Functions/Function[IDNr={ID}]/@style")!.InnerText = setStyle;
+                var setFn = functionList.Find(x => x.IDNr == ID);
+                setFn!.fnColorStyle = setStyle;
+                projectData_Undo[0].SelectSingleNode($"//FM/Functions/Function[IDNr={ID}]/@color")!.InnerText = selectedColor;
+                setFn!.fnColorValue = selectedColor;
+            }
         }
         public void updateUndo()
         {

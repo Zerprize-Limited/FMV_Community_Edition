@@ -202,7 +202,7 @@
     }
     private void freezeColor(MouseEventArgs e, string selectedColor)
     {
-        if (colorValue == selectedColor)
+        if (colorValue != "" && colorValue == selectedColor)
         {
             colorValue = selectedColor;
             freeze = true;

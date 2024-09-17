@@ -467,7 +467,7 @@
     }
     private void ModalColor()
     {
-        if (stateContainer.selectedFn != "-1")
+        if (stateContainer.selectedMulti.Count > 0)
         {
             stateContainer.showColorPicker = true;
             refreshParent.InvokeAsync();
