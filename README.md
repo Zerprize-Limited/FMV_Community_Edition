@@ -1,5 +1,5 @@
 # FMV_Community_Edition
-This is the standard version of the FRAM Model Visualiser that is freely available as a Progressive Web App at https://fmv.zerprize.co.nz.
+This is the standard version of the FRAM Model Visualiser that is available as a Progressive Web App at the link referenced above: https://functionalresonance.github.io/FMV_Community_Edition/.
 
 For Instructions and other documentation go to the [Wiki](https://github.com/Zerprize-Limited/FMV_Community_Edition/wiki) on the toolbar above. To contribute to the community, you can raise [Issues](https://github.com/Zerprize-Limited/FMV_Community_Edition/issues), request updates to the code with [Pull requests](https://github.com/Zerprize-Limited/FMV_Community_Edition/pulls), or join [Discussions](https://github.com/Zerprize-Limited/FMV_Community_Edition/discussions).
 
